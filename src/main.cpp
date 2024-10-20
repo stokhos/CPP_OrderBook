@@ -14,7 +14,7 @@ void test_insert_and_search() {
 
   // Insert orders
   for (const auto &order : orders) {
-    // std::cout << "\nInserting order: " << order.key << std::endl;
+    std::cout << "\nInserting order: " << order.key << std::endl;
     tree.insert(new Order(order));
     std::cout << tree << std::endl;
     // tree.print();

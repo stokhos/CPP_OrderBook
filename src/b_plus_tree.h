@@ -20,7 +20,15 @@ struct Order {
   int key;
   int price;
   int quantity;
+
+public:
+  friend std::ostream &operator<<(std::ostream &os, const Order &order);
 };
+
+inline std::ostream &operator<<(std::ostream &os, const Order &order) {
+  os << std::format("Key={}, Price={}, Quantity={}\n", order.key, order.price, order.quantity);
+  return os;
+}
 
 // Color codes
 constexpr std::string RESET = "\033[0m";
@@ -90,7 +98,10 @@ inline std::ostream &operator<<(std::ostream &os, const Node &node) {
     for (size_t i = 0; i < M; ++i) {
       if (node.children[i].has_value()) {
         if (auto order = std::get_if<Order *>(&*node.children[i])) {
-          os << "(" << (*order)->key << "," << (*order)->price << "," << (*order)->quantity << ")";
+          os << "(";
+          os << order;
+          os << ")";
+          // os << "(" << (*order)->key << "," << (*order)->price << "," << (*order)->quantity << ")";
         } else {
           os << "InvalidOrder";
         }
@@ -251,8 +262,10 @@ private:
       for (size_t i = 0; i < cursor.size; ++i) {
         if (cursor.children[i]) {
           const auto *order = std::get<Order *>(*cursor.children[i]);
-          oss << std::format("{}  Order {}: Key={}, Price={}, Quantity={}\n", indent, i, order->key, order->price,
-                             order->quantity);
+          // oss << std::format("{}  Order {}: Key={}, Price={}, Quantity={}\n", indent, i, order->key, order->price,
+          //                    order->quantity);
+          oss << std::format("{} Order {}: ", indent, i);
+          oss << *order;
         }
       }
     }
@@ -290,6 +303,8 @@ private:
       right->keys[i - 1] = right->keys[i];
     }
     right->size--;
+    right->keys[right->size] = std::nullopt;
+
     new_root->children[0] = left;
     new_root->children[1] = right;
     left->parent = new_root;
@@ -393,7 +408,7 @@ private:
     }
   };
 
-  void insert_into_parent(Node *parent, Node *right_sibling) {
+  void insert_into_parent(Node *parent, Node *right) {
     /*
         ========================================================
          Insert  (x, RSub(x)) into internal node N of B+-tree
@@ -446,8 +461,7 @@ private:
       }
     }
     */
-    int key = right_sibling->keys[0].value();
-
+    int key = right->keys[0].value();
     size_t i = 0;
 
     // Find the correct position to insert the new key in the parent node
@@ -465,11 +479,11 @@ private:
 
     // Insert the new key and the pointer to the new node
     parent->keys[i] = key;
-    parent->children[i + 1] = right_sibling;
-    right_sibling->parent = parent;
+    parent->children[i + 1] = right;
+    right->parent = parent;
     ++parent->size;
 
-    // Check if the parent node is full and needs to be split
+    //  Check if the parent node is full and needs to be split
     if (parent->is_full()) {
       split_internal(parent);
     }
@@ -488,12 +502,6 @@ private:
       // Update the parent of the child node
       std::get<Node *>(*new_internal->children[j])->parent = new_internal;
     }
-
-    std::optional<int> parent_key = new_internal->keys[D];
-    for (size_t i = 0; i < new_internal->size - 1; ++i) {
-      new_internal->keys[i].swap(new_internal->keys[i + 1]);
-    }
-    new_internal->keys[new_internal->size - 1] = std::nullopt;
 
     // Update the size of the original internal node
     cursor->size -= D;
