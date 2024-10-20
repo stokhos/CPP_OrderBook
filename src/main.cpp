@@ -136,6 +136,7 @@ void test_range_search() {
 }
 
 int main() {
+  BPlusTree tree;
   test_insert_and_search();
   test_remove();
   test_large_dataset();

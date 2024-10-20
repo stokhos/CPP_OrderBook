@@ -59,19 +59,15 @@ inline std::ostream &operator<<(std::ostream &os, const Node &node) {
   os << std::format("Node {}[{}]{} (size: {}): ", node.is_leaf ? GREEN : BLUE, node.is_leaf ? "Leaf" : "Internal",
                     RESET, node.size);
 
-  // os << (node.is_leaf ? GREEN : BLUE) << (node.is_leaf ? "Leaf" : "Internal") << RESET << " Node (size: " <<
-  // node.size
-  //    << "): ";
-
   // Print keys
   os << "Keys: [";
   for (size_t i = 0; i < M; ++i) {
     if (node.keys[i].has_value()) {
       os << node.keys[i].value();
     } else {
-      os << "_";
+      os << "x";
     }
-    if (i < node.size - 1)
+    if (i < M - 1)
       os << ", ";
   }
   os << "]";
@@ -85,13 +81,13 @@ inline std::ostream &operator<<(std::ostream &os, const Node &node) {
       } else {
         os << "Null";
       }
-      if (i < node.size)
+      if (i < N)
         os << ", ";
     }
     os << "]";
   } else {
     os << ", Orders: [";
-    for (size_t i = 0; i < node.size; ++i) {
+    for (size_t i = 0; i < M; ++i) {
       if (node.children[i].has_value()) {
         if (auto order = std::get_if<Order *>(&*node.children[i])) {
           os << "(" << (*order)->key << "," << (*order)->price << "," << (*order)->quantity << ")";
@@ -99,15 +95,19 @@ inline std::ostream &operator<<(std::ostream &os, const Node &node) {
           os << "InvalidOrder";
         }
       } else {
-        os << "null";
+        os << "()";
       }
-      if (i < node.size - 1)
+      if (i < M - 1)
         os << ", ";
     }
     os << "]";
   }
 
   return os;
+}
+
+void log(const Node &cursor, const std::string &file, int line, const std::string &func) {
+  std::cout << file << ", " << line << ", " << func << ": " << cursor << std::endl;
 }
 
 class BPlusTree {
@@ -217,24 +217,28 @@ private:
   [[nodiscard]] std::string node_to_string(const Node &cursor, int level) const {
     std::ostringstream oss;
     const std::string indent(level * 4, ' ');
-    oss << std::format("{}Node {}[{}]{} (size: {}): ", indent, cursor.is_leaf ? GREEN : BLUE,
-                       cursor.is_leaf ? "Leaf" : "Internal", RESET, cursor.size);
-    // Transform the array of std::optional<int> into a view of strings
-    auto transformed = cursor.keys | std::views::transform([](const auto &opt) {
-                         return opt ? std::to_string(*opt) : "x"; // Convert optional to string
-                       });
-    // Collect the transformed values into a vector
-    std::vector<std::string> string_values{transformed.begin(), transformed.end()}; // Correctly initialize vector
-    for (size_t i = 0; i < string_values.size(); ++i) {
-      oss << string_values[i];
-      if (i < string_values.size() - 1) {
-        oss << ", ";
+    oss << std::format("{}Node {}[{}]{}: ", indent, cursor.is_leaf ? GREEN : BLUE, cursor.is_leaf ? "Leaf" : "Internal",
+                       RESET);
+
+    oss << "[";
+    for (size_t i = 0; i < M; ++i) {
+      std::optional<int> key = cursor.keys[i];
+      if (key.has_value()) {
+        oss << key.value();
+      } else {
+        oss << "x";
       }
+      if (i < M - 1)
+        oss << ", ";
     }
+    oss << "]";
+    oss << std::format(" (size: {})", cursor.size);
+    oss << "\n";
+
     std::string joined = oss.str();
     std::string formatted = std::format("[{}]\n", joined);
 
-    // Print children for inner nodes
+    // Print children for internal nodes
     if (!cursor.is_leaf) {
       for (size_t i = 0; i <= cursor.size; ++i) {
         if (cursor.children[i]) {
@@ -256,43 +260,6 @@ private:
 
     return oss.str();
   }
-  // std::string node_to_string(Node *cursor, int level) const {
-  //   std::ostringstream oss;
-  //   std::string indent(level * 4, ' ');
-
-  //  oss << indent << "Node [" << (cursor->is_leaf ? "Leaf" : "Internal") << "] (size: " << cursor->size << "): ";
-
-  //  // Print keys
-  //  oss << "Keys: [";
-  //  for (size_t i = 0; i < cursor->size; ++i) {
-  //    oss << cursor->keys[i].value();
-  //    if (i < cursor->size - 1)
-  //      oss << ", ";
-  //  }
-  //  oss << "]";
-  //  oss << "\n";
-
-  //  // Print children for internal nodes
-  //  if (!cursor->is_leaf) {
-  //    for (size_t i = 0; i <= cursor->size; ++i) {
-  //      if (cursor->children[i]) {
-  //        oss << indent << "  Child " << i << ":\n";
-  //        oss << node_to_string(std::get<Node *>(*cursor->children[i]), level + 1);
-  //      }
-  //    }
-  //  } else {
-  //    // Print Order pointers for leaf nodes
-  //    for (size_t i = 0; i < cursor->size; ++i) {
-  //      if (cursor->children[i]) {
-  //        Order *order = std::get<Order *>(*cursor->children[i]);
-  //        oss << indent << "  Order " << i << ": Key=" << order->key << ", Price=" << order->price
-  //            << ", Quantity=" << order->quantity << "\n";
-  //      }
-  //    }
-  //  }
-
-  //  return oss.str();
-  //}
 
   void move_to_leaf(Node *&cursor, int key) const {
     while (!cursor->is_leaf) {
@@ -722,7 +689,9 @@ private:
   }
 };
 inline std::ostream &operator<<(std::ostream &os, const BPlusTree &tree) {
-  return os << (tree.root ? std::format("B+ Tree Structure:\n{}", tree.node_to_string(*tree.root, 0)) : "\nEmpty tree");
+  std::optional<Node *> root = tree.get_root();
+  return os << (root.has_value() ? std::format("B+ Tree Structure:\n{}", tree.node_to_string(*root.value(), 0))
+                                 : "\nEmpty tree");
 }
 
 #endif // BPlusTree_H
