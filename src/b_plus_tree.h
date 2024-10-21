@@ -201,10 +201,7 @@ public:
       return;
     }
     Node *cursor = root.value();
-    // log(*cursor, __FILE__, __LINE__, __func__);
     move_to_leaf_2(cursor, key);
-    std::cout << *cursor << std::endl;
-    log(*cursor, __FILE__, __LINE__, __func__);
 
     if (!cursor) {
       std::cout << "Key " << key << " not found in the tree." << std::endl;
@@ -322,35 +319,20 @@ private:
   };
 
   void move_to_leaf_2(Node *&cursor, int key) const {
-    log(*cursor, __FILE__, __LINE__, __func__);
     while (!cursor->is_leaf) {
       size_t i = 0;
-      log(*cursor, __FILE__, __LINE__, __func__);
       while (i < cursor->size && key >= cursor->keys[i]) {
         ++i; // Find the index of the child to follow
       }
-      std::cout << "i: " << i << ", size: " << cursor->size << ", keys: " << std::boolalpha
-                << (cursor->keys[i].has_value()) << std::endl;
       if (cursor->keys[1].has_value() && cursor->keys[i].value() == 9) {
-        std::cout << "child: " << cursor->keys[i].value() << " has value: " << cursor->children[i].has_value()
-                  << std::endl;
+
         if (cursor->children[i].has_value()) {
-          std::cout << "Moving to child " << i << std::endl;
-          log(std::get<Node *>(cursor->children[i].value()), __FILE__, __LINE__, __func__);
-          // log(*std::get<Node *>(cursor->children[i].value())), __FILE__, __LINE__, __func__);
-          //  Order *child = std::get_if<Node *>(cursor->children[i].value());
-          //  std::cout << " children " << "i: " << i << ", " << *child << std::endl;
         }
-        // std::get<Order *>(cursor->children[i].value()) << std::endl;
       }
-      log(*cursor, __FILE__, __LINE__, __func__);
 
       if (i < cursor->size) {
         // Access the child node directly
-        log(*cursor, __FILE__, __LINE__, __func__);
         if (auto child_opt = cursor->children[i]; child_opt) {
-          log(std::get<Node *>(child_opt.value()), __FILE__, __LINE__, __func__);
-          log(std::get<Node *>(child_opt.value()), __FILE__, __LINE__, __func__);
           cursor = std::get<Node *>(*child_opt);
         }
       } else {
@@ -674,7 +656,7 @@ private:
     // log(*cursor, __FILE__, __LINE__, __func__);
     // log(*child, __FILE__, __LINE__, __func__);
     for (size_t i = 0; i <= cursor->size; ++i) {
-      std::cout << "I: " << i << std::endl;
+      // std::cout << "I: " << i << std::endl;
       if (std::get<Node *>(cursor->children[i].value()) == child) {
         return i;
       }
@@ -816,18 +798,21 @@ private:
   }
 
   void merge_with_right(Node *cursor, Node *right, Node *parent, size_t index) {
+    // std::cout << *std::get<Node *>(right->children[1].value()) << std::endl;
+
     if (!cursor->is_leaf) {
       cursor->keys[cursor->size] = parent->keys[index];
       cursor->size += 1;
     }
     // Move all keys and children from right sibling to cursor
     for (size_t i = 0; i < right->size; ++i) {
+      // std::cout << "i: " << i << std::endl;
       cursor->keys[cursor->size + i].swap(right->keys[i]);
       cursor->children[cursor->size + i].swap(right->children[i]);
     }
     cursor->children[cursor->size + right->size].swap(right->children[right->size]);
 
-    cursor->children[cursor->size + 1 + right->size + 1] = right->children[right->size + 1];
+    // cursor->children[cursor->size + 1 + right->size + 1] = right->children[right->size + 1];
     cursor->size += right->size;
 
     // Remove the key from parent and adjust children
@@ -846,6 +831,7 @@ private:
     }
   }
 };
+
 inline std::ostream &operator<<(std::ostream &os, const BPlusTree &tree) {
   std::optional<Node *> root = tree.get_root();
   return os << (root.has_value() ? std::format("B+ Tree Structure:\n{}", tree.node_to_string(*root.value(), 0))
