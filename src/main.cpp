@@ -48,11 +48,12 @@ void test_remove() {
   }
 
   // Remove some keys
+  std::cout << "\nRemoving 3\n" << tree << std::endl;
   tree.remove(3);
-  std::cout << "\nAfter removing 3" << std::endl;
-  // tree.print();
-  //  return;
+  std::cout << "\nAfter removing 3\n" << tree << std::endl;
+  std::cout << "\nRemoving 7\n" << tree << std::endl;
   tree.remove(7);
+  std::cout << "\nAfter removing 7\n" << tree << std::endl;
   tree.remove(1);
 
   // Verify removed keys are not found

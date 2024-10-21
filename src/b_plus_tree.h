@@ -99,9 +99,8 @@ inline std::ostream &operator<<(std::ostream &os, const Node &node) {
       if (node.children[i].has_value()) {
         if (auto order = std::get_if<Order *>(&*node.children[i])) {
           os << "(";
-          os << order;
+          os << *order;
           os << ")";
-          // os << "(" << (*order)->key << "," << (*order)->price << "," << (*order)->quantity << ")";
         } else {
           os << "InvalidOrder";
         }
@@ -186,11 +185,8 @@ public:
       std::cout << "Tree is empty. Nothing to remove." << std::endl;
       return;
     }
-    std::cout << "root size " << root.value()->size << std::endl;
-
     Node *cursor = root.value();
     move_to_leaf(cursor, key);
-    std::cout << "cursor: " << (cursor->keys[0]).value() << (cursor->keys[1]).value() << std::endl;
 
     if (!cursor) {
       std::cout << "Key " << key << " not found in the tree." << std::endl;
@@ -639,11 +635,12 @@ private:
     // Remove the key and shift the remaining keys
     for (size_t j = i; j < cursor->size - 1; ++j) {
       cursor->keys[j] = cursor->keys[j + 1];
-      cursor->keys[j + 1] = 0;
+      cursor->keys[j + 1] = std::nullopt;
       cursor->children[j] = cursor->children[j + 1];
       cursor->children[j + 1] = std::nullopt;
     }
     --cursor->size;
+    log(*cursor, __FILE__, __LINE__, __func__);
 
     // If the cursor is the root and now empty, the tree becomes empty
     if (cursor->is_root() && cursor->size == 0) {
@@ -659,7 +656,6 @@ private:
   }
 
   void handle_underflow(Node *cursor) {
-    std::cout << "handle underflow " << cursor->keys[0].value() << std::endl;
     if (cursor->is_root()) {
       return;
     }
@@ -687,15 +683,11 @@ private:
 
     // If borrow is not possible, merge with a sibling
     if (cursor_index > 0) {
-      std::cout << "merge left, cursor keys: " << cursor->keys[0].value() << ", " << cursor->keys[1].value()
-                << std::endl;
-      Node *left_sibling = std::get<Node *>(*parent->children[cursor_index - 1]);
-      merge_with_left(cursor, left_sibling, parent, cursor_index - 1);
+      Node *left = std::get<Node *>(*parent->children[cursor_index - 1]);
+      merge_with_left(cursor, left, parent, cursor_index - 1);
     } else {
-      std::cout << "merge right, cursor keys: " << cursor->keys[0].value() << ", " << cursor->keys[1].value()
-                << std::endl;
-      Node *right_sibling = std::get<Node *>(*parent->children[cursor_index + 1]);
-      merge_with_right(cursor, right_sibling, parent, cursor_index);
+      Node *right = std::get<Node *>(*parent->children[cursor_index + 1]);
+      merge_with_right(cursor, right, parent, cursor_index);
     }
   }
 
@@ -733,21 +725,21 @@ private:
     parent->keys[index] = right_sibling->keys[0];
   }
 
-  void merge_with_left(Node *cursor, Node *left_sibling, Node *parent, size_t index) {
-    std::cout << "merge with left" << std::endl;
+  void merge_with_left(Node *cursor, Node *left, Node *parent, size_t index) {
     // Move all keys and children from cursor to left sibling;
     for (size_t i = 0; i < cursor->size; ++i) {
-      left_sibling->keys[left_sibling->size + i] = cursor->keys[i];
-      left_sibling->children[left_sibling->size + i] = cursor->children[i];
+      left->keys[left->size + i].swap(cursor->keys[i]);
+      left->children[left->size + i].swap(cursor->children[i]);
     }
-    left_sibling->size += cursor->size;
+    left->size += cursor->size;
+    cursor->size--;
 
     // Remove the key from parent and adjust children
     for (size_t i = index; i < parent->size - 1; ++i) {
       parent->keys[i] = parent->keys[i + 1];
       parent->children[i + 1] = parent->children[i + 2];
     }
-    parent->keys[parent->size - 1] = 0;
+    parent->keys[parent->size - 1].reset();
     parent->children[parent->size].reset();
     --parent->size;
 
@@ -758,28 +750,22 @@ private:
     if (!parent->is_root() && parent->size < D) {
       handle_underflow(parent);
     }
-    Node *tmp = std::get<Node *>(parent->children[0].value());
   }
 
-  void merge_with_right(Node *cursor, Node *right_sibling, Node *parent, size_t index) {
-    std::cout << std::boolalpha << "is leaf: " << cursor->is_leaf << " cursor size " << cursor->size
-              << " right sibling size " << right_sibling->size << std::endl;
-
-    std::cout << "cursor keys: " << cursor->keys[0].value() << ", " << cursor->keys[1].value()
-              << ", right keys: " << right_sibling->keys[0].value() << ", " << right_sibling->keys[1].value()
-              << std::endl;
-
+  void merge_with_right(Node *cursor, Node *right, Node *parent, size_t index) {
     if (!cursor->is_leaf) {
       cursor->keys[cursor->size] = parent->keys[index];
       cursor->size += 1;
     }
     // Move all keys and children from right sibling to cursor
-    for (size_t i = 0; i < right_sibling->size; ++i) {
-      cursor->keys[cursor->size + i] = right_sibling->keys[i];
-      cursor->children[cursor->size + 1 + i] = right_sibling->children[i];
+    for (size_t i = 0; i < right->size; ++i) {
+      cursor->keys[cursor->size + i].swap(right->keys[i]);
+      cursor->children[cursor->size + i].swap(right->children[i]);
     }
-    cursor->children[cursor->size + 1 + right_sibling->size + 1] = right_sibling->children[right_sibling->size + 1];
-    cursor->size += right_sibling->size + 1;
+    cursor->children[cursor->size + right->size].swap(right->children[right->size]);
+
+    cursor->children[cursor->size + 1 + right->size + 1] = right->children[right->size + 1];
+    cursor->size += right->size;
 
     // Remove the key from parent and adjust children
     for (size_t i = index; i < parent->size - 1; ++i) {
@@ -789,7 +775,7 @@ private:
     --parent->size;
 
     // Delete the empty right sibling node
-    delete right_sibling;
+    delete right;
 
     // If the parent is now underflowing, handle the underflow
     if (!parent->is_root() && parent->size < D) {
