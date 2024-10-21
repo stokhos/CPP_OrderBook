@@ -26,7 +26,7 @@ public:
 };
 
 inline std::ostream &operator<<(std::ostream &os, const Order &order) {
-  os << std::format("Key={}, Price={}, Quantity={}\n", order.key, order.price, order.quantity);
+  os << std::format("Key={}, Price={}, Quantity={}", order.key, order.price, order.quantity);
   return os;
 }
 
@@ -97,7 +97,7 @@ inline std::ostream &operator<<(std::ostream &os, const Node &node) {
     os << ", Orders: [";
     for (size_t i = 0; i < M; ++i) {
       if (node.children[i].has_value()) {
-        if (auto order = std::get_if<Order *>(&*node.children[i])) {
+        if (auto order = std::get<Order *>(node.children[i].value())) {
           os << "(";
           os << *order;
           os << ")";
@@ -278,6 +278,7 @@ private:
           //                    order->quantity);
           oss << std::format("{} Order {}: ", indent, i);
           oss << *order;
+          oss << "\n";
         }
       }
     }
