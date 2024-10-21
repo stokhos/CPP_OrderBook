@@ -73,7 +73,7 @@ inline std::ostream &operator<<(std::ostream &os, const Node &node) {
     if (node.keys[i].has_value()) {
       os << node.keys[i].value();
     } else {
-      os << "x";
+      os << "_";
     }
     if (i < M - 1)
       os << ", ";
@@ -83,13 +83,13 @@ inline std::ostream &operator<<(std::ostream &os, const Node &node) {
   // Print children or orders
   if (!node.is_leaf) {
     os << ", Children: [";
-    for (size_t i = 0; i <= N; ++i) {
+    for (size_t i = 0; i <= M; ++i) {
       if (node.children[i].has_value()) {
         os << "Node*";
       } else {
-        os << "Null";
+        os << "_";
       }
-      if (i < N)
+      if (i < M)
         os << ", ";
     }
     os << "]";
@@ -243,6 +243,22 @@ private:
         oss << ", ";
     }
     oss << "]";
+    oss << ", ";
+    oss << "[";
+    for (size_t i = 0; i <= M; ++i) {
+      if (!cursor.is_leaf) {
+        std::optional<std::variant<Node *, Order *>> child = cursor.children[i];
+        if (child.has_value()) {
+          // Node *child_node = std::get<Node *>(child.value());
+          oss << "Node*";
+        } else {
+          oss << "x";
+        }
+        if (i < M)
+          oss << ", ";
+      }
+    }
+    oss << "]";
     oss << std::format(" (size: {})", cursor.size);
     oss << "\n";
 
@@ -251,7 +267,7 @@ private:
 
     // Print children for internal nodes
     if (!cursor.is_leaf) {
-      for (size_t i = 0; i <= cursor.size; ++i) {
+      for (size_t i = 0; i <= M; ++i) {
         if (cursor.children[i]) {
           oss << std::format("{}  Child {}:\n", indent, i);
           oss << node_to_string(*std::get<Node *>(*cursor.children[i]), level + 1);
@@ -259,7 +275,7 @@ private:
       }
     } else {
       // Print Order pointers for leaf nodes
-      for (size_t i = 0; i < cursor.size; ++i) {
+      for (size_t i = 0; i < M; ++i) {
         if (cursor.children[i]) {
           const auto *order = std::get<Order *>(*cursor.children[i]);
           // oss << std::format("{}  Order {}: Key={}, Price={}, Quantity={}\n", indent, i, order->key, order->price,
@@ -269,8 +285,6 @@ private:
         }
       }
     }
-    oss << "\n";
-
     return oss.str();
   }
 
@@ -404,11 +418,98 @@ private:
     } else {
       // Insert the new key into the parent node
       Node *parent = cursor->parent.value();
-      insert_into_parent(parent, new_leaf);
+      insert_leaf_into_parent(parent, new_leaf);
     }
   };
 
-  void insert_into_parent(Node *parent, Node *right) {
+  void insert_internal_into_parent(Node *parent, Node *right) {
+    /*
+        ========================================================
+         Insert  (x, RSub(x)) into internal node N of B+-tree
+        ========================================================
+    */
+    /*
+    InsertInternal( x, rx, N )
+    {
+        if ( N ≠ full )
+        {
+            Shift keys to make room for x
+            insert (x, rx) into its position in N
+
+            return
+        }
+        else
+        {
+        -------------------------------------------
+        Internal node N has: n keys + n+1 node ptrs:
+
+            N: |p1|k1|p2|k2|....|pn|kn|pn+1|
+        -------------------------------------------
+
+        Make the following virtual node
+            by inserting x,rx in N:
+
+            |p1|k1|p2|k2|...|x|rx|...|pn|kn|pn+1|
+            (There are (n+2) pointers in this node !!!)
+
+        Split this node into 3 parts:
+            1.  Take the middle key out
+            2.  L = the "left"  half (use the old node to do this)
+            3.  R = the "right" half (create a new node to do this)
+
+                    Let: m = ⌈(n+1)/2⌉
+                        1. Take km out
+                        2. L =  |p1|k1|p2|k2|...|pm-1|km-1|pm|         (old node N)
+                        3. R =  |pm+1|km+1|....|x|rx|...|pn|kn|pn+1|   (new node)
+
+        if ( N == root )   // N is same node as L
+        {
+            Make a new root node containing (L, km, R)
+
+            return;
+        }
+        else
+        {
+            InsertInternal( (km, R), parent(N));    // Recurse !!
+        }
+      }
+    }
+    */
+    int key = right->keys[0].value();
+    size_t i = 0;
+
+    for (size_t j = 0; j < right->size - 1; ++j) {
+      right->keys[j] = right->keys[j + 1];
+    }
+    right->size--;
+    right->keys[right->size] == std::nullopt;
+
+    // Find the correct position to insert the new key in the parent node
+    while (i < parent->size && parent->keys[i] < key) {
+      ++i;
+    }
+
+    // Shift keys and children to make room for the new key
+    for (size_t j = parent->size; j > i; --j) {
+      // Shift the keys
+      parent->keys[j].swap(parent->keys[j - 1]);
+      // Shift the child pointers
+      parent->children[j + 1].swap(parent->children[j]);
+    }
+
+    // Insert the new key and the pointer to the new node
+    parent->keys[i] = key;
+    parent->children[i + 1] = right;
+    right->parent = parent;
+    ++parent->size;
+
+    //  Check if the parent node is full and needs to be split
+    if (parent->is_full()) {
+      split_internal(parent);
+    }
+  }
+
+  void insert_leaf_into_parent(Node *parent, Node *right) {
     /*
         ========================================================
          Insert  (x, RSub(x)) into internal node N of B+-tree
@@ -512,7 +613,7 @@ private:
     } else {
       // Insert the new key into the parent node
       Node *parent = cursor->parent.value();
-      insert_into_parent(parent, new_internal);
+      insert_internal_into_parent(parent, new_internal);
     }
   }
 
