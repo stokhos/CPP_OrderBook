@@ -52,6 +52,7 @@ void test_remove() {
   tree.remove(3);
   std::cout << "\nAfter removing 3\n" << tree << std::endl;
   std::cout << "\nRemoving 7\n" << tree << std::endl;
+  std::cout << &tree << std::endl;
   tree.remove(7);
   std::cout << "\nAfter removing 7\n" << tree << std::endl;
   tree.remove(1);

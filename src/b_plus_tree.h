@@ -66,6 +66,21 @@ public:
 inline std::ostream &operator<<(std::ostream &os, const Node &node) {
   os << std::format("Node {}[{}]{} (size: {}): ", node.is_leaf ? GREEN : BLUE, node.is_leaf ? "Leaf" : "Internal",
                     RESET, node.size);
+  os << "Parent: ";
+  os << "[";
+  if (node.parent.has_value()) {
+    for (size_t i = 0; i < node.parent.value()->size; ++i) {
+      os << node.parent.value()->keys[i].value();
+      if (i < node.parent.value()->size - 1) {
+        os << ", ";
+      }
+    }
+  } else {
+    os << "_";
+  }
+
+  os << "]";
+  os << ", ";
 
   // Print keys
   os << "Keys: [";
@@ -186,7 +201,10 @@ public:
       return;
     }
     Node *cursor = root.value();
-    move_to_leaf(cursor, key);
+    // log(*cursor, __FILE__, __LINE__, __func__);
+    move_to_leaf_2(cursor, key);
+    std::cout << *cursor << std::endl;
+    log(*cursor, __FILE__, __LINE__, __func__);
 
     if (!cursor) {
       std::cout << "Key " << key << " not found in the tree." << std::endl;
@@ -196,7 +214,6 @@ public:
     remove_from_leaf(cursor, key);
 
     if (root.value()->size == 0 && !root.value()->is_leaf) {
-      // std::cout << "i'm herer  root is empty" << std::endl;
       Node *new_root = std::get<Node *>(*root.value()->children[0]);
       delete root.value();
       root.reset();
@@ -284,17 +301,56 @@ private:
     }
     return oss.str();
   }
-
   void move_to_leaf(Node *&cursor, int key) const {
     while (!cursor->is_leaf) {
       size_t i = 0;
       while (i < cursor->size && key >= cursor->keys[i]) {
         ++i; // Find the index of the child to follow
       }
-
       if (i < cursor->size) {
         // Access the child node directly
         if (auto child_opt = cursor->children[i]; child_opt) {
+          cursor = std::get<Node *>(*child_opt);
+        }
+      } else {
+        // Access the last child node if we're at the end
+        if (auto child_opt = cursor->children[cursor->size]; child_opt) {
+          cursor = std::get<Node *>(*child_opt);
+        }
+      }
+    }
+  };
+
+  void move_to_leaf_2(Node *&cursor, int key) const {
+    log(*cursor, __FILE__, __LINE__, __func__);
+    while (!cursor->is_leaf) {
+      size_t i = 0;
+      log(*cursor, __FILE__, __LINE__, __func__);
+      while (i < cursor->size && key >= cursor->keys[i]) {
+        ++i; // Find the index of the child to follow
+      }
+      std::cout << "i: " << i << ", size: " << cursor->size << ", keys: " << std::boolalpha
+                << (cursor->keys[i].has_value()) << std::endl;
+      if (cursor->keys[1].has_value() && cursor->keys[i].value() == 9) {
+        std::cout << "child: " << cursor->keys[i].value() << " has value: " << cursor->children[i].has_value()
+                  << std::endl;
+        if (cursor->children[i].has_value()) {
+          std::cout << "Moving to child " << i << std::endl;
+          log(std::get<Node *>(cursor->children[i].value()), __FILE__, __LINE__, __func__);
+          // log(*std::get<Node *>(cursor->children[i].value())), __FILE__, __LINE__, __func__);
+          //  Order *child = std::get_if<Node *>(cursor->children[i].value());
+          //  std::cout << " children " << "i: " << i << ", " << *child << std::endl;
+        }
+        // std::get<Order *>(cursor->children[i].value()) << std::endl;
+      }
+      log(*cursor, __FILE__, __LINE__, __func__);
+
+      if (i < cursor->size) {
+        // Access the child node directly
+        log(*cursor, __FILE__, __LINE__, __func__);
+        if (auto child_opt = cursor->children[i]; child_opt) {
+          log(std::get<Node *>(child_opt.value()), __FILE__, __LINE__, __func__);
+          log(std::get<Node *>(child_opt.value()), __FILE__, __LINE__, __func__);
           cursor = std::get<Node *>(*child_opt);
         }
       } else {
@@ -615,7 +671,10 @@ private:
   }
 
   size_t find_child_index(Node *cursor, Node *child) {
+    // log(*cursor, __FILE__, __LINE__, __func__);
+    // log(*child, __FILE__, __LINE__, __func__);
     for (size_t i = 0; i <= cursor->size; ++i) {
+      std::cout << "I: " << i << std::endl;
       if (std::get<Node *>(cursor->children[i].value()) == child) {
         return i;
       }
@@ -641,7 +700,6 @@ private:
       cursor->children[j + 1] = std::nullopt;
     }
     --cursor->size;
-    log(*cursor, __FILE__, __LINE__, __func__);
 
     // If the cursor is the root and now empty, the tree becomes empty
     if (cursor->is_root() && cursor->size == 0) {
@@ -652,6 +710,7 @@ private:
 
     // If the leaf is not the root and now underflows, handle the underflow
     if (!cursor->is_root() && cursor->size < D) {
+      // log(*cursor, __FILE__, __LINE__, __func__);
       handle_underflow(cursor);
     }
   }
@@ -662,6 +721,8 @@ private:
     }
 
     Node *parent = cursor->parent.value();
+    // log(*cursor, __FILE__, __LINE__, __func__);
+    // log(*parent, __FILE__, __LINE__, __func__);
     size_t cursor_index = find_child_index(parent, cursor);
 
     // Try to borrow from left sibling
@@ -727,7 +788,8 @@ private:
   }
 
   void merge_with_left(Node *cursor, Node *left, Node *parent, size_t index) {
-    // Move all keys and children from cursor to left sibling;
+    // log(*cursor, __FILE__, __LINE__, __func__);
+    //  Move all keys and children from cursor to left sibling;
     for (size_t i = 0; i < cursor->size; ++i) {
       left->keys[left->size + i].swap(cursor->keys[i]);
       left->children[left->size + i].swap(cursor->children[i]);
