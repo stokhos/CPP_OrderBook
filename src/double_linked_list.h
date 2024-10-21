@@ -13,8 +13,7 @@ private:
     Node *prev;
 
     template <typename... Args>
-    Node(Args &&...args)
-        : data(std::forward<Args>(args)...), next(nullptr), prev(nullptr) {}
+    Node(Args &&...args) : data(std::forward<Args>(args)...), next(nullptr), prev(nullptr) {}
   };
 
   class NodePool {
@@ -24,12 +23,11 @@ private:
     Node *free_nodes;
 
   public:
-    NodePool() : free_nodes(nullptr){};
+    NodePool() : free_nodes(nullptr) {};
     NodePool(const NodePool &) = delete;
     NodePool &operator=(const NodePool &) = delete;
     NodePool(NodePool &&other) noexcept
-        : memory_blocks(std::move(other.memory_blocks)),
-          free_nodes(std::move(other.free_nodes)) {}
+        : memory_blocks(std::move(other.memory_blocks)), free_nodes(std::move(other.free_nodes)) {}
 
     NodePool &operator=(NodePool &&other) noexcept {
       if (this != &other) {
@@ -194,12 +192,8 @@ public:
     T &operator*() { return current->data; }
     T *operator->() { return &current->data; }
     Node *node() const { return current; }
-    bool operator==(const Iterator &other) const {
-      return current == other.current;
-    }
-    bool operator!=(const Iterator &other) const {
-      return current != other.current;
-    }
+    bool operator==(const Iterator &other) const { return current == other.current; }
+    bool operator!=(const Iterator &other) const { return current != other.current; }
   };
   Iterator begin() { return Iterator(head); }
   Iterator end() { return Iterator(nullptr); }
@@ -224,12 +218,8 @@ public:
     T *operator->() const { return &current->data; }
     Node *node() const { return current; }
 
-    bool operator==(const ReverseIterator &other) const {
-      return current == other.current;
-    }
-    bool operator!=(const ReverseIterator &other) const {
-      return current != other.current;
-    }
+    bool operator==(const ReverseIterator &other) const { return current == other.current; }
+    bool operator!=(const ReverseIterator &other) const { return current != other.current; }
   };
 
   ReverseIterator rbegin() { return ReverseIterator(tail); }
@@ -316,74 +306,3 @@ public:
     std::cout << std::endl;
   }
 };
-
-int main() {
-
-  DoubleLinkedList<int> list;
-
-  // Test basic operations
-  list.push_back(1);
-  list.push_back(2);
-  list.push_back(0);
-
-  // Test iteration
-  std::cout << "Forward: ";
-  for (const auto &item : list) {
-    std::cout << item << " ";
-  }
-  std::cout << std::endl;
-
-  std::cout << "Reverse: ";
-  for (auto it = list.rbegin(); it != list.rend(); ++it) {
-    std::cout << *it << " ";
-  }
-  std::cout << std::endl;
-
-  // Test bulk operations
-  std::vector<int> v = {10, 20, 30, 40, 50};
-  list.assign(v.begin(), v.end());
-
-  std::cout << "After bulk operations: " << std::endl;
-  list.resize(7, 100);
-  std::cout << "After resize" << std::endl;
-
-  std::cout << "After bulk operations: ";
-  for (const auto &item : list) {
-    std::cout << item << " ";
-  }
-  std::cout << std::endl;
-
-  // Test swap
-  DoubleLinkedList<int> other_list;
-  other_list.push_back(999);
-
-  std::cout << "list Before swap: ";
-  for (const auto &item : list) {
-    std::cout << item << " ";
-  }
-  std::cout << std::endl;
-
-  std::cout << "other list Before swap: ";
-  for (const auto &item : other_list) {
-    std::cout << item << " ";
-  }
-  std::cout << std::endl;
-  // FIXME: swap will destruct the NodeAllocator first
-  list.swap(other_list);
-
-  std::cout << "list After swap: ";
-  for (const auto &item : list) {
-    std::cout << item << " ";
-  }
-  std::cout << std::endl;
-  std::cout << "done\n";
-
-  std::cout << "other list After swap: ";
-  for (const auto &item : other_list) {
-    std::cout << item << " ";
-  }
-  std::cout << std::endl;
-  std::cout << "done\n";
-
-  return 0;
-}
