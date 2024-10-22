@@ -9,6 +9,7 @@
 
 void test_insert_and_search() {
   BPlusTree tree;
+  print_bplus_tree(tree);
   std::vector<Order> orders = {{5, 100, 10}, {3, 90, 5},  {7, 110, 8}, {1, 80, 3},  {9, 120, 12},
                                {2, 85, 4},   {6, 105, 7}, {4, 95, 6},  {8, 115, 9}, {10, 125, 15}};
 
@@ -16,9 +17,8 @@ void test_insert_and_search() {
   for (const auto &order : orders) {
     std::cout << "\nInserting order: " << order.key << std::endl;
     tree.insert(new Order(order));
-    // std::cout << tree << std::endl;
-    //  tree.print();
   }
+  print_bplus_tree(tree);
 
   // Search for each order
   for (const auto &order : orders) {
@@ -48,9 +48,10 @@ void test_remove() {
   }
 
   // Remove some keys
-  // std::cout << "\nRemoving 3\n" << tree << std::endl;
+  std::cout << "\nRemoving 3\n" << std::endl;
   tree.remove(3);
-  // std::cout << "\nAfter removing 3\n" << tree << std::endl;
+  std::cout << "\nAfter removing 3\n" << std::endl;
+  print_bplus_tree(tree);
   // std::cout << "\nRemoving 7\n" << tree << std::endl;
   // std::cout << &tree << std::endl;
   tree.remove(7);
