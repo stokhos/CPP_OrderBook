@@ -77,13 +77,34 @@ void test_remove() {
 
   std::cout << "Remove test passed!\n" << std::endl;
 }
+
+void test_debug_1() {
+  std::vector<int> keys{9, 2, 17, 18, 7, 14, 1, 16, 15, 3, 5, 10, 4, 19, 12, 6, 11, 8, 13, 20};
+  BPlusTree tree;
+  for (int key : keys) {
+    tree.insert(new Order{key, key * 10, key});
+  }
+  print_bplus_tree(tree);
+
+  for (int key : keys) {
+    std::cout << "Removing key: " << key << std::endl;
+    tree.remove(key);
+    print_bplus_tree(tree);
+  }
+}
+
 void test_random_dataset() {
   BPlusTree tree;
-  std::vector<int> keys(99);
+  std::vector<int> keys(20);
   std::iota(keys.begin(), keys.end(), 1);
   std::random_device rd;
   std::mt19937 g(rd());
   std::shuffle(keys.begin(), keys.end(), g);
+  // Using std::format
+  for (const int &key : keys) {
+    std::cout << std::format("{},", key);
+  }
+  std::cout << std::endl;
 
   std::cout << "Inserting keys..." << std::endl;
   // Insert shuffled keys
@@ -196,10 +217,11 @@ void test_range_search() {
 }
 
 int main() {
-  BPlusTree tree;
-  test_insert_and_search();
-  test_remove();
-  test_random_dataset();
+  // BPlusTree tree;
+  // test_insert_and_search();
+  // test_remove();
+  test_debug_1();
+  // test_random_dataset();
   // test_large_dataset();
   // test_range_search();
 

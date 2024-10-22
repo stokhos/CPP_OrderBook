@@ -738,7 +738,7 @@ private:
     if (cursor_index > 0) {
       Node *left_sibling = std::get<Node *>(*parent->children[cursor_index - 1]);
       if (left_sibling->size > D) {
-        borrow_from_left(cursor, left_sibling, parent, cursor_index);
+        redistribute_from_left(cursor, left_sibling, parent, cursor_index);
         return;
       }
     }
@@ -747,7 +747,7 @@ private:
     if (cursor_index > 0 && cursor_index < parent->size - 1) {
       Node *right_sibling = std::get<Node *>(*parent->children[cursor_index + 1]);
       if (right_sibling->size > D) {
-        borrow_from_right(cursor, right_sibling, parent, cursor_index);
+        redistribute_from_right(cursor, right_sibling, parent, cursor_index);
         return;
       }
     }
@@ -762,33 +762,53 @@ private:
     }
   }
 
-  void borrow_from_left(Node *cursor, Node *left_sibling, Node *parent, size_t index) {
+  void redistribute_from_left(Node *cursor, Node *left, Node *parent, size_t index) {
     // Move the last key from the left sibling to the cursor node
     for (size_t i = cursor->size; i > 0; --i) {
-      cursor->keys[i] = cursor->keys[i - 1];
-      cursor->children[i] = cursor->children[i - 1];
+      cursor->keys[i].swap(cursor->keys[i - 1]);
+      cursor->children[i].swap(cursor->children[i - 1]);
     }
+    ++cursor->size;
 
     // Move the last key from the left sibling to the cursor node
-    cursor->keys[0] = left_sibling->keys[left_sibling->size - 1];
-    cursor->children[0] = left_sibling->children[left_sibling->size - 1];
-    ++cursor->size;
-    --left_sibling->size;
+    cursor->keys[0].swap(left->keys[left->size - 1]);
+    cursor->children[0].swap(left->children[left->size - 1]);
+    if (cursor->children[0].has_value()) {
+      std::variant<Node *, Order *> tmp = cursor->children[0].value();
+      if (std::holds_alternative<Node *>(tmp)) {
+        std::get<Node *>(tmp)->parent = cursor;
+      } else {
+        std::cout << "Invalid type in merge_with_right" << std::endl;
+      }
+    } else {
+      std::cout << "No value in redistribute_with_right" << std::endl;
+    }
+    --left->size;
 
     // Update the parent key
     parent->keys[index - 1] = cursor->keys[0];
   }
 
-  void borrow_from_right(Node *cursor, Node *right_sibling, Node *parent, size_t index) {
+  void redistribute_from_right(Node *cursor, Node *right_sibling, Node *parent, size_t index) {
     // Move the first key from the right sibling to the cursor node
-    cursor->keys[cursor->size] = right_sibling->keys[0];
-    cursor->children[cursor->size] = right_sibling->children[0];
+    cursor->keys[cursor->size].swap(right_sibling->keys[0]);
+    cursor->children[cursor->size].swap(right_sibling->children[0]);
+    if (cursor->children[0].has_value()) {
+      std::variant<Node *, Order *> tmp = cursor->children[cursor->size].value();
+      if (std::holds_alternative<Node *>(tmp)) {
+        std::get<Node *>(tmp)->parent = cursor;
+      } else {
+        std::cout << "Invalid type in merge_with_left" << std::endl;
+      }
+    } else {
+      std::cout << "No value in redistribute_with_left" << std::endl;
+    }
     ++cursor->size;
 
     // Shift the keys in the right sibling
     for (size_t i = 0; i < right_sibling->size - 1; ++i) {
-      right_sibling->keys[i] = right_sibling->keys[i + 1];
-      right_sibling->children[i] = right_sibling->children[i + 1];
+      right_sibling->keys[i].swap(right_sibling->keys[i + 1]);
+      right_sibling->children[i].swap(right_sibling->children[i + 1]);
     }
     --right_sibling->size;
 
