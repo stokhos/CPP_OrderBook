@@ -25,30 +25,11 @@ struct Order {
   int key;
   int price;
   int quantity;
-  // public:
-  //   friend std::ostream &operator<<(std::ostream &os, const Order &order);
 };
 
 std::string print_order(const Order *order, std::ostream &os) {
   return std::format("Key={}, Price={}, Quantity={}", order->key, order->price, order->quantity);
 }
-
-/*
-inline std::ostream &operator<<(std::ostream &os, const Order &order) {
-  os << std::format("Key={}, Price={}, Quantity={}", order.key, order.price, order.quantity);
-  return os;
-}
-*/
-
-// Color codes
-// constexpr std::string RESET = "\033[0m";
-// constexpr std::string RED = "\033[31m";
-// constexpr std::string GREEN = "\033[32m";
-// constexpr std::string YELLOW = "\033[33m";
-// constexpr std::string BLUE = "\033[34m";
-// constexpr std::string MAGENTA = "\033[35m";
-// constexpr std::string CYAN = "\033[36m";
-// constexpr std::string WHITE = "\033[37m";
 
 constexpr std::size_t D = 2;     // Global constant for the degree of the B+ tree
 constexpr std::size_t M = D * 2; // Max number of keys in an internal node
@@ -70,79 +51,7 @@ public:
   [[nodiscard]] bool is_root() const noexcept { return !parent.has_value(); }
   [[nodiscard]] bool is_leaf_root() const noexcept { return is_root() && is_leaf; }
   [[nodiscard]] bool is_internal_root() const noexcept { return is_root() && !is_leaf; }
-  // friend std::ostream &operator<<(std::ostream &os, const Node &node);
 };
-
-// Now, let's define the operator<< function
-/*
-inline std::ostream &operator<<(std::ostream &os, const Node &node) {
-  os << std::format("Node {}[{}]{} (size: {}): ", node.is_leaf ? GREEN : BLUE, node.is_leaf ? "Leaf" : "Internal",
-                    RESET, node.size);
-  os << "Parent: ";
-  os << "[";
-  if (node.parent.has_value()) {
-    for (size_t i = 0; i < node.parent.value()->size; ++i) {
-      os << node.parent.value()->keys[i].value();
-      if (i < node.parent.value()->size - 1) {
-        os << ", ";
-      }
-    }
-  } else {
-    os << "_";
-  }
-
-  os << "]";
-  os << ", ";
-
-  // Print keys
-  os << "Keys: [";
-  for (size_t i = 0; i < M; ++i) {
-    if (node.keys[i].has_value()) {
-      os << node.keys[i].value();
-    } else {
-      os << "_";
-    }
-    if (i < M - 1)
-      os << ", ";
-  }
-  os << "]";
-
-  // Print children or orders
-  if (!node.is_leaf) {
-    os << ", Children: [";
-    for (size_t i = 0; i <= M; ++i) {
-      if (node.children[i].has_value()) {
-        std::variant<Node *, Order *> child = node.children[i].value();
-        os << "Node*";
-      } else {
-        os << "_";
-      }
-      if (i < M)
-        os << ", ";
-    }
-    os << "]";
-  } else {
-    os << ", Orders: [";
-    for (size_t i = 0; i < M; ++i) {
-      if (node.children[i].has_value()) {
-        if (auto order = std::get<Order *>(node.children[i].value())) {
-          os << "(";
-          os << *order;
-          os << ")";
-        } else {
-          os << "InvalidOrder";
-        }
-      } else {
-        os << "()";
-      }
-      if (i < M - 1)
-        os << ", ";
-    }
-    os << "]";
-  }
-  return os;
-}
-*/
 
 // ANSI Color codes
 namespace Color {
@@ -298,66 +207,7 @@ void print_subtree_recursive(const std::optional<std::variant<Node *, Order *>> 
       }
     }
   }
-
-  /*
-
-  print_indent(level, os);
-  os << node_color << "Node [" << (node->is_leaf ? "Leaf" : "Internal") << (node->is_root() ? " ROOT" : "") << "]: [";
-
-  // Print keys
-  for (std::size_t i = 0; i < M; ++i) {
-    if (i < node->size && node->keys[i].has_value()) {
-      os << Color::YELLOW << node->keys[i].value() << node_color;
-    } else {
-      os << Color::MAGENTA << "x" << node_color;
-    }
-    if (i < M - 1)
-      os << ", ";
-  }
-  os << "], [";
-
-  // Print children pointers representation
-  if (!node->is_leaf) {
-    for (std::size_t i = 0; i <= M; ++i) {
-      if (i <= node->size && node->children[i].has_value()) {
-        os << Color::CYAN << "Node*" << node_color;
-      } else {
-        os << Color::MAGENTA << "x" << node_color;
-      }
-      if (i < M)
-        os << ", ";
-    }
-  }
-  os << "] (size: " << Color::YELLOW << node->size << node_color << ")" << Color::RESET << "\n";
-
-  // For leaf nodes, print the actual orders
-  if (node->is_leaf) {
-    for (std::size_t i = 0; i < node->size; ++i) {
-      print_indent(level + 1, os);
-      os << Color::CYAN << "Order " << i << ": ";
-      if (auto order = std::get<Order *>(node->children[i].value())) {
-        os << "Key=" << Color::YELLOW << order->key << Color::CYAN << ", Price=" << Color::YELLOW << order->price
-           << Color::CYAN << ", Quantity=" << Color::YELLOW << order->quantity << Color::RESET << "\n";
-      }
-    }
-  }
-  // Recursively print children for internal nodes
-  else {
-    for (std::size_t i = 0; i <= node->size; ++i) {
-      if (node->children[i].has_value()) {
-        if (auto child = std::get<Node *>(node->children[i].value())) {
-          print_bplus_tree_recursive(child, level + 1, os);
-        }
-      }
-    }
-  }
-*/
 }
-
-// helper type for the visitor
-// template <class... Ts> struct overloaded : Ts... {
-//  using Ts::operator()...;
-//};
 
 void check_variant(std::variant<Node *, Order *> &var) {
   // std::cout << "3" << std::endl;
@@ -380,7 +230,6 @@ class BPlusTree {
 public:
   BPlusTree() = default;
   [[nodiscard]] std::optional<Node *> get_root() const noexcept { return root; }
-  // friend std::ostream &operator<<(std::ostream &os, const BPlusTree &tree);
 
   std::optional<Node *> range_search(int key) const {
     if (!root) {
@@ -407,7 +256,6 @@ public:
       }
       auto order_opt = cursor->children[j];
       if (order_opt) {
-        std::cout << "Order found" << std::endl;
         return std::get<Order *>(*order_opt);
       }
 
@@ -446,9 +294,7 @@ public:
       std::cout << "Key " << key << " not found in the tree." << std::endl;
       return;
     }
-    // print_subtree_recursive(cursor, 0, std::cout);
 
-    // std::cout << "is leaf: " << cursor->is_leaf << std::endl;
     remove_from_leaf(cursor, key);
 
     if (root.value()->size == 0 && !root.value()->is_leaf) {
@@ -458,7 +304,6 @@ public:
       root = new_root;
       new_root->parent = std::nullopt;
     }
-    std::cout << "removed leaf" << std::endl;
   }
 
   /*
@@ -476,70 +321,6 @@ public:
   */
 
 private:
-  /*
-    [[nodiscard]] std::string node_to_string(const Node &cursor, int level) const {
-      std::ostringstream oss;
-      const std::string indent(level * 4, ' ');
-      oss << std::format("{}Node {}[{}]{}: ", indent, cursor.is_leaf ? GREEN : BLUE, cursor.is_leaf ? "Leaf" :
-    "Internal", RESET);
-
-      oss << "[";
-      for (size_t i = 0; i < M; ++i) {
-        std::optional<int> key = cursor.keys[i];
-        if (key.has_value()) {
-          oss << key.value();
-        } else {
-          oss << "x";
-        }
-        if (i < M - 1)
-          oss << ", ";
-      }
-      oss << "]";
-      oss << ", ";
-      oss << "[";
-      for (size_t i = 0; i <= M; ++i) {
-        if (!cursor.is_leaf) {
-          std::optional<std::variant<Node *, Order *>> child = cursor.children[i];
-          if (child.has_value()) {
-            oss << "Node*";
-          } else {
-            oss << "x";
-          }
-          if (i < M)
-            oss << ", ";
-        }
-      }
-      oss << "]";
-      oss << std::format(" (size: {})", cursor.size);
-      oss << "\n";
-
-      std::string joined = oss.str();
-      std::string formatted = std::format("[{}]\n", joined);
-
-      // Print children for internal nodes
-      if (!cursor.is_leaf) {
-        for (size_t i = 0; i <= M; ++i) {
-          if (cursor.children[i]) {
-            oss << std::format("{}  Child {}:\n", indent, i);
-            oss << node_to_string(*std::get<Node *>(*cursor.children[i]), level + 1);
-          }
-        }
-      } else {
-        // Print Order pointers for leaf nodes
-        for (size_t i = 0; i < M; ++i) {
-          if (cursor.children[i]) {
-            const auto *order = std::get<Order *>(*cursor.children[i]);
-            // oss << std::format("{}  Order {}: Key={}, Price={}, Quantity={}\n", indent, i, order->key, order->price,
-            //                    order->quantity);
-            oss << std::format("{} Order {}: ", indent, i);
-            oss << *order;
-            oss << "\n";
-          }
-        }
-      }
-      return oss.str();
-    }
-  */
   void move_to_leaf(Node *&cursor, int key) const {
     while (!cursor->is_leaf) {
       size_t i = 0;
@@ -568,23 +349,17 @@ private:
       }
 
       if (i < cursor->size) {
-        // log(cursor, __FILE__, __LINE__, __func__);
         //  Access the child node directly
         if (auto child_opt = cursor->children[i]; child_opt) {
-          // std::variant<Node *, Order *> child = child_opt.value();
-          check_variant(child_opt.value());
           cursor = std::get<Node *>(child_opt.value());
-          // std::cout << "7 " << std::endl;
         }
       } else {
         // Access the last child node if we're at the end
         if (auto child_opt = cursor->children[cursor->size]; child_opt) {
-          // std::cout << "iii " << i << std::endl;
           cursor = std::get<Node *>(child_opt.value());
         }
       }
     }
-    std::cout << "9" << std::endl;
   };
 
   void new_internal_root(Node *left, Node *right) {
@@ -896,9 +671,6 @@ private:
   }
 
   size_t find_child_index(Node *cursor, Node *child) {
-    // print_subtree_recursive(cursor, 0, std::cout);
-    //  log(*cursor, __FILE__, __LINE__, __func__);
-    //  log(*child, __FILE__, __LINE__, __func__);
     for (size_t i = 0; i <= cursor->size; ++i) {
       // std::cout << "I: " << i << std::endl;
       if (std::get<Node *>(cursor->children[i].value()) == child) {
@@ -933,7 +705,6 @@ private:
       root = nullptr;
       return;
     }
-    // print_subtree_recursive(cursor, 0, std::cout);
     //  If the leaf is not the root and now underflows, handle the underflow
     if (!cursor->is_root() && cursor->size < D) {
       handle_underflow(cursor);
@@ -945,14 +716,8 @@ private:
       return;
     }
 
-    log(cursor, __FILE__, __LINE__, __func__);
     Node *parent = cursor->parent.value();
-    std::cout << "here" << std::endl;
-    // print_subtree_recursive(cursor, 0, std::cout);
-    // log(*parent, __FILE__, __LINE__, __func__);
-    // print_subtree_recursive(parent, 0, std::cout);
     size_t cursor_index = find_child_index(parent, cursor);
-    std::cout << "there" << std::endl;
     // Try to borrow from left sibling
     if (cursor_index > 0) {
       Node *left_sibling = std::get<Node *>(*parent->children[cursor_index - 1]);
@@ -963,7 +728,7 @@ private:
     }
 
     // Try to borrow from right sibling
-    if (cursor_index > 0) {
+    if (cursor_index > 0 && cursor_index < parent->size - 1) {
       Node *right_sibling = std::get<Node *>(*parent->children[cursor_index + 1]);
       if (right_sibling->size > D) {
         borrow_from_right(cursor, right_sibling, parent, cursor_index);
@@ -977,9 +742,7 @@ private:
       merge_with_left(cursor, left, parent, cursor_index - 1);
     } else {
       Node *right = std::get<Node *>(*parent->children[cursor_index + 1]);
-      std::cout << __LINE__ << ", " << __func__ << ", " << right << std::endl;
       merge_with_right(cursor, right, parent, cursor_index);
-      std::cout << __LINE__ << ", " << __func__ << ", " << get_child(right) << std::endl;
     }
   }
 
@@ -1018,10 +781,12 @@ private:
   }
 
   void merge_with_left(Node *cursor, Node *left, Node *parent, size_t index) {
-    // log(*cursor, __FILE__, __LINE__, __func__);
     //  Move all keys and children from cursor to left sibling;
     for (size_t i = 0; i < cursor->size; ++i) {
       left->keys[left->size + i].swap(cursor->keys[i]);
+      if (cursor->children[i].has_value() && std::holds_alternative<Node *>(cursor->children[i].value())) {
+        std::get<Node *>(cursor->children[i].value())->parent = left;
+      }
       left->children[left->size + i].swap(cursor->children[i]);
     }
     left->size += cursor->size;
@@ -1046,21 +811,25 @@ private:
   }
 
   void merge_with_right(Node *cursor, Node *right, Node *parent, size_t index) {
-    // std::cout << *std::get<Node *>(right->children[1].value()) << std::endl;
 
     if (!cursor->is_leaf) {
       cursor->keys[cursor->size] = parent->keys[index];
       cursor->size += 1;
     }
-    // Move all keys and children from right sibling to cursor
+    //  Move all keys and children from right sibling to cursor
     for (size_t i = 0; i < right->size; ++i) {
       // std::cout << "i: " << i << std::endl;
       cursor->keys[cursor->size + i].swap(right->keys[i]);
+      if (std::holds_alternative<Node *>(right->children[i].value())) {
+        std::get<Node *>(right->children[i].value())->parent = cursor;
+      }
       cursor->children[cursor->size + i].swap(right->children[i]);
+    }
+    if (std::holds_alternative<Node *>(right->children[right->size].value())) {
+      std::get<Node *>(right->children[right->size].value())->parent = cursor;
     }
     cursor->children[cursor->size + right->size].swap(right->children[right->size]);
 
-    // cursor->children[cursor->size + 1 + right->size + 1] = right->children[right->size + 1];
     cursor->size += right->size;
 
     // Remove the key from parent and adjust children
@@ -1080,13 +849,6 @@ private:
   }
 };
 
-/*
-inline std::ostream &operator<<(std::ostream &os, const BPlusTree &tree) {
-  std::optional<Node *> root = tree.get_root();
-  return os << (root.has_value() ? std::format("B+ Tree Structure:\n{}", tree.node_to_string(*root.value(), 0))
-                                 : "\nEmpty tree");
-}
-*/
 // Main print function that can be called on the tree
 void print_bplus_tree(const BPlusTree tree, std::ostream &os = std::cout) {
   auto root = tree.get_root();
@@ -1096,5 +858,6 @@ void print_bplus_tree(const BPlusTree tree, std::ostream &os = std::cout) {
   }
   os << Color::BOLD << "B+ Tree Structure:" << Color::RESET << "\n";
   print_subtree_recursive(root, 0, os);
+  os << std::endl;
 }
 #endif // BPlusTree_H

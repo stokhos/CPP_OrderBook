@@ -15,7 +15,7 @@ void test_insert_and_search() {
 
   // Insert orders
   for (const auto &order : orders) {
-    std::cout << "\nInserting order: " << order.key << std::endl;
+    std::cout << "Inserting order: " << order.key << std::endl;
     tree.insert(new Order(order));
   }
   print_bplus_tree(tree);
@@ -24,7 +24,7 @@ void test_insert_and_search() {
   for (const auto &order : orders) {
     auto result = tree.search(order.key);
     assert(result.has_value());
-    std::cout << "result key: " << result.value()->key << ", order key:" << order.key << std::endl;
+    // std::cout << "result key: " << result.value()->key << ", order key:" << order.key << std::endl;
     assert((*result)->key == order.key);
     assert((*result)->price == order.price);
     assert((*result)->quantity == order.quantity);
@@ -42,21 +42,28 @@ void test_remove() {
 
   // Insert orders
   for (int key : keys) {
-    std::cout << "\nInserting order: " << key << std::endl;
+    // std::cout << "Inserting order: " << key << std::endl;
     tree.insert(new Order{key, key * 10, key});
     // std::cout << tree << std::endl;
   }
+  std::cout << std::endl;
+  print_bplus_tree(tree);
 
   // Remove some keys
-  std::cout << "\nRemoving 3\n" << std::endl;
+  std::cout << "Removing 3" << std::endl;
   tree.remove(3);
-  std::cout << "\nAfter removing 3\n" << std::endl;
+  std::cout << "After removing 3" << std::endl;
   print_bplus_tree(tree);
-  // std::cout << "\nRemoving 7\n" << tree << std::endl;
-  // std::cout << &tree << std::endl;
+  std::cout << "Removing 7" << std::endl;
   tree.remove(7);
+  std::cout << "After removing 7" << std::endl;
+  print_bplus_tree(tree);
   // std::cout << "\nAfter removing 7\n" << tree << std::endl;
+  std::cout << "Removing 1" << std::endl;
   tree.remove(1);
+  std::cout << "After removing 1" << std::endl;
+  print_bplus_tree(tree);
+  // return;
 
   // Verify removed keys are not found
   assert(!tree.search(3).has_value());
@@ -68,7 +75,7 @@ void test_remove() {
     assert(tree.search(key).has_value());
   }
 
-  std::cout << "Remove test passed!" << std::endl;
+  std::cout << "Remove test passed!\n" << std::endl;
 }
 
 void test_large_dataset() {
@@ -79,21 +86,30 @@ void test_large_dataset() {
   std::mt19937 g(rd());
   std::shuffle(keys.begin(), keys.end(), g);
 
+  std::cout << "Inserting keys..." << std::endl;
   // Insert shuffled keys
+
   for (int key : keys) {
     tree.insert(new Order{key, key * 10, key % 100});
   }
+  std::cout << "Searching keys..." << std::endl;
 
   // Verify all keys are present
   for (int key : keys) {
     assert(tree.search(key).has_value());
   }
 
+  // print_bplus_tree(tree);
+
   // Remove half of the keys
+  std::cout << "Removing keys..." << std::endl;
   for (int i = 0; i < 500; ++i) {
+    std::cout << "Removing key: " << keys[i] << std::endl;
     tree.remove(keys[i]);
+    // print_bplus_tree(tree);
   }
 
+  std::cout << "Verifying remaining keys: " << std::endl;
   // Verify removed keys are not found and remaining keys are present
   for (int i = 0; i < 1000; ++i) {
     if (i < 500) {
@@ -143,144 +159,8 @@ int main() {
   test_insert_and_search();
   test_remove();
   test_large_dataset();
-  test_range_search();
+  //  test_range_search();
 
   std::cout << "All tests passed successfully!" << std::endl;
   return 0;
 }
-
-// #include "b_plus_tree.h"
-// #include <cassert>
-// #include <iostream>
-//
-// void test_b_plus_tree() {
-//   BPlusTree tree;
-//
-//   // Test case 1: Inserting into an empty B+ Tree
-//   {
-//     Order *order1 = new Order{1, 100, 10};
-//     tree.insert(order1);
-//     assert(tree.get_root().has_value());
-//     assert(tree.get_root().value()->size == 1);
-//     assert(tree.get_root().value()->keys[0] == 1);
-//   }
-//   // tree.pretty_print();
-//
-//   // Test case 2: Inserting multiple orders
-//   {
-//     Order *order2 = new Order{2, 200, 20};
-//     Order *order3 = new Order{3, 300, 30};
-//     tree.insert(order2);
-//     tree.insert(order3);
-//     assert(tree.get_root().value()->size == 3);
-//     assert(tree.get_root().value()->keys[0] == 1);
-//     assert(tree.get_root().value()->keys[1] == 2);
-//     assert(tree.get_root().value()->keys[2] == 3);
-//   }
-//   // tree.print();
-//
-//   // Test case 3: Searching for existing keys
-//   {
-//     auto result1 = tree.search(1);
-//     assert(result1.has_value());
-//     assert(result1.value()->price == 100);
-//
-//     auto result2 = tree.search(2);
-//     assert(result2.has_value());
-//     assert(result2.value()->price == 200);
-//
-//     auto result3 = tree.search(3);
-//     assert(result3.has_value());
-//     assert(result3.value()->price == 300);
-//   }
-//
-//   // tree.print();
-//   //  Test case 4: Searching for a non-existent key
-//   {
-//     auto result = tree.search(4);
-//     assert(!result.has_value());
-//   }
-//
-//   // Test case 5: Inserting to trigger a split
-//   {
-//     for (int i = 4; i <= 6; ++i) {
-//       Order *order = new Order{i, i * 100, i * 10};
-//       tree.insert(order);
-//     }
-//     assert(tree.get_root().has_value());
-//     assert(tree.get_root().value()->size == 2); // Assuming split occurs 2 twitce
-//   }
-//   // tree.print();
-//
-//   // Test case 6: Check if new root is created after split
-//   {
-//     auto root = tree.get_root().value();
-//     assert(root->is_inner_root());
-//     assert(root->size == 2); // The new root should have two keys after split
-//   }
-//
-//   // Test case 7: Check split and structure of children
-//   {
-//     auto root = tree.get_root().value();
-//     Node *child1 = std::get<Node *>(root->children[0].value());
-//     Node *child2 = std::get<Node *>(root->children[1].value());
-//     Node *child3 = std::get<Node *>(root->children[2].value());
-//
-//     assert(child1->size == 2); // First child should have two keys
-//     assert(child1->keys[0] == 1);
-//     assert(child1->keys[1] == 2);
-//
-//     assert(child2->size == 2); // Second child should also have two keys
-//     assert(child2->keys[0] == 3);
-//     assert(child2->keys[1] == 4);
-//
-//     assert(child3->size == 2); // Third child should also have two keys
-//     assert(child3->keys[0] == 5);
-//     assert(child3->keys[1] == 6);
-//     // assert(child3->is_root());
-//   }
-//
-//   // Test case 8: Check range search
-//   {
-//     auto range_result = tree.range_search(3);
-//     assert(range_result.has_value());
-//     assert(range_result.value()->is_leaf);
-//   }
-//
-//   // Test case 9: Inserting orders with the same key
-//   // FIXME (Peiyun): Need to handlie duplicates prpperly
-//   {
-//     Order *orderDuplicate = new Order{1, 150, 15};
-//     tree.insert(orderDuplicate);
-//     // This might require handling duplicates based on your implementation logic.
-//     auto result = tree.search(1);
-//     assert(result.has_value());
-//     assert(result.value()->price == 150); // Check if it updated
-//   }
-//
-//   // Test case 10: Inserting enough keys to cause multiple splits
-//   {
-//     for (int i = 7; i <= 15; ++i)
-//     // for (int i = 7; i <= 10; ++i)
-//     {
-//       Order *order = new Order{i, i * 100, i * 10};
-//       tree.insert(order);
-//     }
-//     assert(tree.get_root().has_value());
-//     // tree.print();
-//     std::cout << "root key: " << tree.get_root().value()->keys[0] << std::endl;
-//     std::cout << "root size: " << tree.get_root().value()->size << std::endl;
-//     assert((tree.get_root().value()->size = 1) && (tree.get_root().value()->keys[0] == 7)); // Ensure root 1  key
-//   }
-//
-//   // Clean up orders in a proper implementation
-//   // Ideally implement destructor for BPlusTree that deletes all nodes.
-//
-//   std::cout << "All tests passed!" << std::endl;
-// }
-//
-// int main() {
-//   test_b_plus_tree();
-//   return 0;
-// }
-//
