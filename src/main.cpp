@@ -16,8 +16,8 @@ void test_insert_and_search() {
   for (const auto &order : orders) {
     std::cout << "\nInserting order: " << order.key << std::endl;
     tree.insert(new Order(order));
-    std::cout << tree << std::endl;
-    // tree.print();
+    // std::cout << tree << std::endl;
+    //  tree.print();
   }
 
   // Search for each order
@@ -44,17 +44,17 @@ void test_remove() {
   for (int key : keys) {
     std::cout << "\nInserting order: " << key << std::endl;
     tree.insert(new Order{key, key * 10, key});
-    std::cout << tree << std::endl;
+    // std::cout << tree << std::endl;
   }
 
   // Remove some keys
-  std::cout << "\nRemoving 3\n" << tree << std::endl;
+  // std::cout << "\nRemoving 3\n" << tree << std::endl;
   tree.remove(3);
-  std::cout << "\nAfter removing 3\n" << tree << std::endl;
-  std::cout << "\nRemoving 7\n" << tree << std::endl;
-  std::cout << &tree << std::endl;
+  // std::cout << "\nAfter removing 3\n" << tree << std::endl;
+  // std::cout << "\nRemoving 7\n" << tree << std::endl;
+  // std::cout << &tree << std::endl;
   tree.remove(7);
-  std::cout << "\nAfter removing 7\n" << tree << std::endl;
+  // std::cout << "\nAfter removing 7\n" << tree << std::endl;
   tree.remove(1);
 
   // Verify removed keys are not found
