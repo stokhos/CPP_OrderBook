@@ -713,7 +713,7 @@ private:
       cursor->children[j + 1] = std::nullopt;
     }
     --cursor->size;
-    print_subtree_recursive(cursor, 0, true, 0, std::cout);
+    // print_subtree_recursive(cursor, 0, true, 0, std::cout);
 
     // If the cursor is the root and now empty, the tree becomes empty
     if (cursor->is_root() && cursor->size == 0) {
@@ -753,14 +753,13 @@ private:
       }
     }
 
-    // std::cout << "cursor index " << cursor_index << std::endl;
-    // print_subtree_recursive(cursor->parent, 0, true, 0, std::cout);
-    // print_subtree_recursive(parent->children[cursor_index + 1],0,true,0, std::cout);
-
     // If borrow is not possible, merge with a sibling
     if (cursor_index > 0) {
       Node *left = std::get<Node *>(parent->children[cursor_index - 1].value());
+      // print_subtree_recursive(left, 4, true, 0, std::cout);
+      // print_subtree_recursive(cursor, 4, true, 0, std::cout);
       merge_with_left(cursor, left, parent, cursor_index - 1);
+      // print_subtree_recursive(parent, 0, true, 0, std::cout);
     } else {
       Node *right = std::get<Node *>(parent->children[cursor_index + 1].value());
       merge_with_right(cursor, right, parent, cursor_index);
@@ -823,8 +822,10 @@ private:
   void merge_with_left(Node *cursor, Node *left, Node *parent, size_t index) {
     //  Move all keys and children from cursor to left sibling;
     // FIMXE (Peiyun) we might have overflow
+
+    left->keys[left->size] = std::get<Node *>(cursor->children[0].value())->keys[0].value();
     for (size_t i = 0; i < cursor->size; ++i) {
-      left->keys[left->size + i].swap(cursor->keys[i]);
+      left->keys[left->size + i + 1].swap(cursor->keys[i]);
       if (cursor->children[i].has_value()) {
         // std::variant<Node *, Order *> tmp = cursor->children[i].value();
         if (auto tmp = cursor->children[i].value(); std::holds_alternative<Node *>(tmp)) {
@@ -867,8 +868,15 @@ private:
     //  Move all keys and children from right sibling to cursor
     for (size_t i = 0; i < right->size; ++i) {
       cursor->keys[cursor->size + i].swap(right->keys[i]);
-      if (std::holds_alternative<Node *>(right->children[i].value())) {
-        std::get<Node *>(right->children[i].value())->parent = cursor;
+      if (right->children[i].has_value()) {
+        if (auto tmp = right->children[i].value(); std::holds_alternative<Node *>(tmp)) {
+          std::get<Node *>(right->children[i].value())->parent = cursor;
+          // std::get<Node *>(tmp)->parent = cursor;
+        } else {
+          std::cout << std::format("Invalid type in {}", __func__) << std::endl;
+        }
+      } else {
+        std::cout << std::format("No value in {}", __func__) << std::endl;
       }
       cursor->children[cursor->size + i].swap(right->children[i]);
     }

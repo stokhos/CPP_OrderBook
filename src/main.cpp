@@ -90,6 +90,9 @@ void test_debug_1() {
     std::cout << "Removing key: " << key << std::endl;
     tree.remove(key);
     print_bplus_tree(tree, true);
+    if (key == 17) {
+      return;
+    }
   }
 }
 
@@ -217,8 +220,8 @@ void test_range_search() {
 }
 
 int main() {
-  test_insert_and_search();
-  test_remove();
+  // test_insert_and_search();
+  // test_remove();
   test_debug_1();
   // test_random_dataset();
   // test_large_dataset();
