@@ -304,13 +304,16 @@ public:
       return;
     }
     Node *cursor = root.value();
+
     move_to_leaf(cursor, key);
 
     if (!cursor) {
       std::cout << "Key " << key << " not found in the tree." << std::endl;
       return;
     }
+    std::optional<std::variant<Node *, Order *>> tmp = cursor;
 
+    print_subtree_recursive(tmp, 0, true, 0, std::cout);
     remove_from_leaf(cursor, key);
 
     if (root.value()->size == 0 && !root.value()->is_leaf) {
@@ -339,6 +342,8 @@ public:
 private:
   void move_to_leaf(Node *&cursor, int key) const {
     while (!cursor->is_leaf) {
+      std::cout << "line " << __LINE__ << std::endl;
+      // print_parent(cursor->parent, std::cout);
       size_t i = 0;
       while (i < cursor->size && key >= cursor->keys[i]) {
         ++i; // Find the index of the child to follow
@@ -352,27 +357,6 @@ private:
         // Access the last child node if we're at the end
         if (auto child_opt = cursor->children[cursor->size]; child_opt) {
           cursor = std::get<Node *>(*child_opt);
-        }
-      }
-    }
-  };
-
-  void move_to_leaf_2(Node *&cursor, int key) const {
-    while (!cursor->is_leaf) {
-      size_t i = 0;
-      while (i < cursor->size && key >= cursor->keys[i]) {
-        ++i; // Find the index of the child to follow
-      }
-
-      if (i < cursor->size) {
-        //  Access the child node directly
-        if (auto child_opt = cursor->children[i]; child_opt) {
-          cursor = std::get<Node *>(child_opt.value());
-        }
-      } else {
-        // Access the last child node if we're at the end
-        if (auto child_opt = cursor->children[cursor->size]; child_opt) {
-          cursor = std::get<Node *>(child_opt.value());
         }
       }
     }
@@ -713,7 +697,6 @@ private:
       cursor->children[j + 1] = std::nullopt;
     }
     --cursor->size;
-    // print_subtree_recursive(cursor, 0, true, 0, std::cout);
 
     // If the cursor is the root and now empty, the tree becomes empty
     if (cursor->is_root() && cursor->size == 0) {
@@ -755,12 +738,15 @@ private:
 
     // If borrow is not possible, merge with a sibling
     if (cursor_index > 0) {
+      std::cout << "Merging with left node" << std::endl;
       Node *left = std::get<Node *>(parent->children[cursor_index - 1].value());
       // print_subtree_recursive(left, 4, true, 0, std::cout);
       // print_subtree_recursive(cursor, 4, true, 0, std::cout);
       merge_with_left(cursor, left, parent, cursor_index - 1);
       // print_subtree_recursive(parent, 0, true, 0, std::cout);
     } else {
+      std::cout << "Merging with right node" << std::endl;
+      Node *left = std::get<Node *>(parent->children[cursor_index - 1].value());
       Node *right = std::get<Node *>(parent->children[cursor_index + 1].value());
       merge_with_right(cursor, right, parent, cursor_index);
     }
@@ -913,16 +899,5 @@ void print_bplus_tree(const BPlusTree tree, bool ignore_order = true, std::ostre
     return;
   }
   os << Color::RED << "Empty tree" << Color::RESET << "\n";
-
-  /*
-  auto root = tree.get_root();
-  if (!root.has_value()) {
-    os << Color::RED << "Empty tree" << Color::RESET << "\n";
-    return;
-  }
-  os << Color::BOLD << "B+ Tree Structure:" << Color::RESET << "\n";
-  print_subtree_recursive(root, 0, ignore_order, 0, os);
-  os << std::endl;
-  */
 }
 #endif // BPlusTree_H
