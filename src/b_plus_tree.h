@@ -143,8 +143,8 @@ std::string get_child(const std::optional<std::variant<Node *, Order *>> ov_node
 
 void print_children(const std::variant<Node *, Order *> v_node, std::ostream &os) {
   if (std::holds_alternative<Node *>(v_node)) {
-    Node *tmp_node = std::get<Node *>(v_node);
-    if (!tmp_node->is_leaf) {
+    // Node *tmp_node = std::get<Node *>(v_node);
+    if (auto tmp_node = std::get<Node *>(v_node); !tmp_node->is_leaf) {
       os << "[";
       for (size_t i = 0; i <= M; ++i) {
         if (i <= tmp_node->size && tmp_node->children[i].has_value()) {
@@ -165,6 +165,8 @@ void print_size(const std::variant<Node *, Order *> v_node, std::ostream &os) {
   if (std::holds_alternative<Node *>(v_node)) {
     Node *tmp_node = std::get<Node *>(v_node);
     os << "(size: " << tmp_node->size << ")" << "\n";
+  } else {
+    os << "Invalid type ";
   }
 }
 
@@ -216,7 +218,6 @@ void print_subtree_recursive(const std::optional<std::variant<Node *, Order *>> 
       for (size_t i = 0; i <= tmp_node->size; ++i) {
         if (tmp_node->children[i].has_value()) {
           auto child = tmp_node->children[i];
-          // if (auto child = std::get<Node *>(tmp_node->children[i].value())) {
           print_subtree_recursive(child, level + 1, ignore_order, i, os);
           //}
         }
@@ -226,7 +227,6 @@ void print_subtree_recursive(const std::optional<std::variant<Node *, Order *>> 
 }
 
 void check_variant(std::variant<Node *, Order *> &var) {
-  // std::cout << "3" << std::endl;
   std::visit(overloaded{
                  [](Node *arg) { std::cout << "Node* " << std::endl; },
                  [](Order *arg) { std::cout << "Order* " << arg->price << std::endl; },
@@ -304,7 +304,7 @@ public:
       return;
     }
     Node *cursor = root.value();
-    move_to_leaf_2(cursor, key);
+    move_to_leaf(cursor, key);
 
     if (!cursor) {
       std::cout << "Key " << key << " not found in the tree." << std::endl;
@@ -688,7 +688,6 @@ private:
 
   size_t find_child_index(Node *cursor, Node *child) {
     for (size_t i = 0; i <= cursor->size; ++i) {
-      // std::cout << "I: " << i << std::endl;
       if (std::get<Node *>(cursor->children[i].value()) == child) {
         return i;
       }
@@ -714,6 +713,7 @@ private:
       cursor->children[j + 1] = std::nullopt;
     }
     --cursor->size;
+    print_subtree_recursive(cursor, 0, true, 0, std::cout);
 
     // If the cursor is the root and now empty, the tree becomes empty
     if (cursor->is_root() && cursor->size == 0) {
@@ -733,6 +733,7 @@ private:
     }
 
     Node *parent = cursor->parent.value();
+
     size_t cursor_index = find_child_index(parent, cursor);
     // Try to borrow from left sibling
     if (cursor_index > 0) {
@@ -744,7 +745,7 @@ private:
     }
 
     // Try to borrow from right sibling
-    if (cursor_index > 0 && cursor_index < parent->size - 1) {
+    if (cursor_index >= 0 && cursor_index < parent->size - 1) {
       Node *right_sibling = std::get<Node *>(*parent->children[cursor_index + 1]);
       if (right_sibling->size > D) {
         redistribute_from_right(cursor, right_sibling, parent, cursor_index);
@@ -752,12 +753,16 @@ private:
       }
     }
 
+    // std::cout << "cursor index " << cursor_index << std::endl;
+    // print_subtree_recursive(cursor->parent, 0, true, 0, std::cout);
+    // print_subtree_recursive(parent->children[cursor_index + 1],0,true,0, std::cout);
+
     // If borrow is not possible, merge with a sibling
     if (cursor_index > 0) {
-      Node *left = std::get<Node *>(*parent->children[cursor_index - 1]);
+      Node *left = std::get<Node *>(parent->children[cursor_index - 1].value());
       merge_with_left(cursor, left, parent, cursor_index - 1);
     } else {
-      Node *right = std::get<Node *>(*parent->children[cursor_index + 1]);
+      Node *right = std::get<Node *>(parent->children[cursor_index + 1].value());
       merge_with_right(cursor, right, parent, cursor_index);
     }
   }
@@ -774,8 +779,7 @@ private:
     cursor->keys[0].swap(left->keys[left->size - 1]);
     cursor->children[0].swap(left->children[left->size - 1]);
     if (cursor->children[0].has_value()) {
-      std::variant<Node *, Order *> tmp = cursor->children[0].value();
-      if (std::holds_alternative<Node *>(tmp)) {
+      if (auto tmp = cursor->children[0].value(); std::holds_alternative<Node *>(tmp)) {
         std::get<Node *>(tmp)->parent = cursor;
       } else {
         std::cout << "Invalid type in merge_with_right" << std::endl;
@@ -794,14 +798,14 @@ private:
     cursor->keys[cursor->size].swap(right_sibling->keys[0]);
     cursor->children[cursor->size].swap(right_sibling->children[0]);
     if (cursor->children[0].has_value()) {
-      std::variant<Node *, Order *> tmp = cursor->children[cursor->size].value();
-      if (std::holds_alternative<Node *>(tmp)) {
+      // std::variant<Node *, Order *> tmp = cursor->children[cursor->size].value();
+      if (auto tmp = cursor->children[cursor->size].value(); std::holds_alternative<Node *>(tmp)) {
         std::get<Node *>(tmp)->parent = cursor;
       } else {
-        std::cout << "Invalid type in merge_with_left" << std::endl;
+        std::cout << std::format("Invalid type in {}", __func__) << std::endl;
       }
     } else {
-      std::cout << "No value in redistribute_with_left" << std::endl;
+      std::cout << std::format("No value in {}", __func__) << std::endl;
     }
     ++cursor->size;
 
@@ -818,15 +822,23 @@ private:
 
   void merge_with_left(Node *cursor, Node *left, Node *parent, size_t index) {
     //  Move all keys and children from cursor to left sibling;
+    // FIMXE (Peiyun) we might have overflow
     for (size_t i = 0; i < cursor->size; ++i) {
       left->keys[left->size + i].swap(cursor->keys[i]);
-      if (cursor->children[i].has_value() && std::holds_alternative<Node *>(cursor->children[i].value())) {
-        std::get<Node *>(cursor->children[i].value())->parent = left;
+      if (cursor->children[i].has_value()) {
+        // std::variant<Node *, Order *> tmp = cursor->children[i].value();
+        if (auto tmp = cursor->children[i].value(); std::holds_alternative<Node *>(tmp)) {
+          std::get<Node *>(tmp)->parent = left;
+        } else {
+          std::cout << std::format("Invalid type in {}", __func__) << std::endl;
+        }
+      } else {
+        std::cout << std::format("No value in {}", __func__) << std::endl;
       }
       left->children[left->size + i].swap(cursor->children[i]);
     }
     left->size += cursor->size;
-    cursor->size--;
+    cursor->size = 0;
 
     // Remove the key from parent and adjust children
     for (size_t i = index; i < parent->size - 1; ++i) {
@@ -854,14 +866,13 @@ private:
     }
     //  Move all keys and children from right sibling to cursor
     for (size_t i = 0; i < right->size; ++i) {
-      // std::cout << "i: " << i << std::endl;
       cursor->keys[cursor->size + i].swap(right->keys[i]);
       if (std::holds_alternative<Node *>(right->children[i].value())) {
         std::get<Node *>(right->children[i].value())->parent = cursor;
       }
       cursor->children[cursor->size + i].swap(right->children[i]);
     }
-    if (std::holds_alternative<Node *>(right->children[right->size].value())) {
+    if (auto child = right->children[right->size]; child.has_value()) {
       std::get<Node *>(right->children[right->size].value())->parent = cursor;
     }
     cursor->children[cursor->size + right->size].swap(right->children[right->size]);
@@ -886,7 +897,16 @@ private:
 };
 
 // Main print function that can be called on the tree
-void print_bplus_tree(const BPlusTree tree, bool ignore_order = false, std::ostream &os = std::cout) {
+void print_bplus_tree(const BPlusTree tree, bool ignore_order = true, std::ostream &os = std::cout) {
+  if (auto root = tree.get_root(); root) {
+    os << Color::BOLD << "B+ Tree Structure:" << Color::RESET << "\n";
+    print_subtree_recursive(root, 0, ignore_order, 0, os);
+    os << std::endl;
+    return;
+  }
+  os << Color::RED << "Empty tree" << Color::RESET << "\n";
+
+  /*
   auto root = tree.get_root();
   if (!root.has_value()) {
     os << Color::RED << "Empty tree" << Color::RESET << "\n";
@@ -895,5 +915,6 @@ void print_bplus_tree(const BPlusTree tree, bool ignore_order = false, std::ostr
   os << Color::BOLD << "B+ Tree Structure:" << Color::RESET << "\n";
   print_subtree_recursive(root, 0, ignore_order, 0, os);
   os << std::endl;
+  */
 }
 #endif // BPlusTree_H

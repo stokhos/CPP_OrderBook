@@ -84,12 +84,12 @@ void test_debug_1() {
   for (int key : keys) {
     tree.insert(new Order{key, key * 10, key});
   }
-  print_bplus_tree(tree);
+  print_bplus_tree(tree, true);
 
   for (int key : keys) {
     std::cout << "Removing key: " << key << std::endl;
     tree.remove(key);
-    print_bplus_tree(tree);
+    print_bplus_tree(tree, true);
   }
 }
 
@@ -217,9 +217,8 @@ void test_range_search() {
 }
 
 int main() {
-  // BPlusTree tree;
-  // test_insert_and_search();
-  // test_remove();
+  test_insert_and_search();
+  test_remove();
   test_debug_1();
   // test_random_dataset();
   // test_large_dataset();
