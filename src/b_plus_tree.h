@@ -739,9 +739,131 @@ private:
     }
   }
 
+  void redistribute_leaf_from_left(Node *cursor, Node *left, Node *parent, size_t index) {
+    // Move the last key from the left sibling to the cursor node
+    for (size_t i = cursor->size; i > 0; --i) {
+      cursor->keys[i].swap(cursor->keys[i - 1]);
+      cursor->children[i].swap(cursor->children[i - 1]);
+    }
+    ++cursor->size;
+
+    // Move the last key from the left sibling to the cursor node
+    cursor->keys[0].swap(left->keys[left->size - 1]);
+    cursor->children[0].swap(left->children[left->size - 1]);
+
+    if (cursor->children[0].has_value()) {
+      if (auto tmp = cursor->children[0].value(); std::holds_alternative<Order *>(tmp)) {
+        // std::get<Order *>(tmp)->parent = cursor;
+      } else {
+        std::cout << "Invalid type in merge_with_right" << std::endl;
+      }
+    }
+    --left->size;
+
+    // Update the parent key
+    parent->keys[index - 1] = cursor->keys[0];
+  }
+
+  void redistribute_leaf_from_right(Node *cursor, Node *right, Node *parent, size_t index) {
+    cursor->keys[cursor->size].swap(right->keys[0]);
+    cursor->children[cursor->size].swap(right->children[0]);
+    if (cursor->children[0].has_value()) {
+      if (auto tmp = cursor->children[cursor->size].value(); std::holds_alternative<Order *>(tmp)) {
+        // std::get<Order *>(tmp)->parent = cursor;
+      } else {
+        std::cout << std::format("Invalid type in {}", __func__) << std::endl;
+      }
+    }
+    ++cursor->size;
+
+    // Shift the keys in the right sibling
+    for (size_t i = 0; i < right->size - 1; ++i) {
+      right->keys[i].swap(right->keys[i + 1]);
+      right->children[i].swap(right->children[i + 1]);
+    }
+    --right->size;
+
+    // Update the parent key
+    parent->keys[index] = right->keys[0];
+  }
+
+  void handle_leaf_underflow(Node *cursor) {
+    Node *parent = cursor->parent.value();
+
+    size_t cursor_index = find_child_index(parent, cursor);
+    // Try to borrow from left sibling
+    if (cursor_index > 0) {
+      Node *left_sibling = std::get<Node *>(*parent->children[cursor_index - 1]);
+      if (left_sibling->size > D) {
+        redistribute_leaf_from_left(cursor, left_sibling, parent, cursor_index);
+        return;
+      }
+    }
+
+    // Try to borrow from right sibling
+    if (cursor_index >= 0 && cursor_index < parent->size - 1) {
+      Node *right_sibling = std::get<Node *>(*parent->children[cursor_index + 1]);
+      if (right_sibling->size > D) {
+        redistribute_leaf_from_right(cursor, right_sibling, parent, cursor_index);
+        return;
+      }
+    }
+
+    // If borrow is not possible, merge with a sibling
+    // if (cursor_index > 0) {
+    //  std::cout << "Merging with left node" << std::endl;
+    //  Node *left = std::get<Node *>(parent->children[cursor_index - 1].value());
+    //  merge_with_left(cursor, left, parent, cursor_index - 1);
+    //} else {
+    //  std::cout << "Merging with right node" << std::endl;
+    //  Node *right = std::get<Node *>(parent->children[cursor_index + 1].value());
+    //  merge_with_right(cursor, right, parent, cursor_index);
+    //}
+  }
+
+  void handle_internal_underflow(Node *cursor) {
+    Node *parent = cursor->parent.value();
+
+    size_t cursor_index = find_child_index(parent, cursor);
+    // Try to borrow from left sibling
+    if (cursor_index > 0) {
+      Node *left_sibling = std::get<Node *>(*parent->children[cursor_index - 1]);
+      if (left_sibling->size > D) {
+        redistribute_from_left(cursor, left_sibling, parent, cursor_index);
+        return;
+      }
+    }
+
+    // Try to borrow from right sibling
+    if (cursor_index >= 0 && cursor_index < parent->size - 1) {
+      Node *right_sibling = std::get<Node *>(*parent->children[cursor_index + 1]);
+      if (right_sibling->size > D) {
+        redistribute_from_right(cursor, right_sibling, parent, cursor_index);
+        return;
+      }
+    }
+
+    // If borrow is not possible, merge with a sibling
+    if (cursor_index > 0) {
+      std::cout << "Merging with left node" << std::endl;
+      Node *left = std::get<Node *>(parent->children[cursor_index - 1].value());
+      merge_with_left(cursor, left, parent, cursor_index - 1);
+    } else {
+      std::cout << "Merging with right node" << std::endl;
+      Node *right = std::get<Node *>(parent->children[cursor_index + 1].value());
+      merge_with_right(cursor, right, parent, cursor_index);
+    }
+  }
+
   void handle_underflow(Node *cursor) {
     if (cursor->is_root()) {
       return;
+    }
+
+    if (cursor->is_leaf) {
+      handle_leaf_underflow(cursor);
+    } else {
+      handle_internal_underflow(cursor);
     }
 
     Node *parent = cursor->parent.value();
@@ -769,10 +891,7 @@ private:
     if (cursor_index > 0) {
       std::cout << "Merging with left node" << std::endl;
       Node *left = std::get<Node *>(parent->children[cursor_index - 1].value());
-      // print_subtree_recursive(left, 4, true, 0, std::cout);
-      // print_subtree_recursive(cursor, 4, true, 0, std::cout);
       merge_with_left(cursor, left, parent, cursor_index - 1);
-      // print_subtree_recursive(parent, 0, true, 0, std::cout);
     } else {
       std::cout << "Merging with right node" << std::endl;
       Node *right = std::get<Node *>(parent->children[cursor_index + 1].value());
