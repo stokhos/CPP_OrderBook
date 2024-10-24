@@ -90,7 +90,22 @@ void test_debug_1() {
     std::cout << "Removing key: " << key << std::endl;
     tree.remove(key);
     print_bplus_tree(tree, true);
-    if (key == 17) {
+  }
+}
+
+void test_debug_2() {
+  std::vector<int> keys{13, 9, 16, 20, 1, 3, 12, 7, 10, 14, 6, 17, 2, 5, 4, 19, 15, 8, 18, 11};
+  BPlusTree tree;
+  for (int key : keys) {
+    tree.insert(new Order{key, key * 10, key});
+  }
+  print_bplus_tree(tree, true);
+
+  for (int key : keys) {
+    std::cout << "Removing key: " << key << std::endl;
+    tree.remove(key);
+    print_bplus_tree(tree, true);
+    if (key == 16) {
       return;
     }
   }
@@ -128,7 +143,10 @@ void test_random_dataset() {
   for (int i = 0; i < 500; ++i) {
     std::cout << "Removing key: " << keys[i] << std::endl;
     tree.remove(keys[i]);
-    // print_bplus_tree(tree);
+    print_bplus_tree(tree);
+    if (i == 16) {
+      break;
+    }
   }
 
   std::cout << "Verifying remaining keys: " << std::endl;

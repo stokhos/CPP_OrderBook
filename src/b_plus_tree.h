@@ -299,21 +299,27 @@ public:
   };
 
   void remove(int key) {
+    /*
+      if ( x not found ){
+         return;
+      }
+      else {
+         Shift keys to delete the key x
+         and its record ptr from the node
+      }
+    */
     if (!root) {
       std::cout << "Tree is empty. Nothing to remove." << std::endl;
       return;
     }
     Node *cursor = root.value();
 
+    // Use the B-tree search algorithm to find the leaf node L where the x belongs
     move_to_leaf(cursor, key);
-
     if (!cursor) {
       std::cout << "Key " << key << " not found in the tree." << std::endl;
       return;
     }
-    std::optional<std::variant<Node *, Order *>> tmp = cursor;
-
-    print_subtree_recursive(tmp, 0, true, 0, std::cout);
     remove_from_leaf(cursor, key);
 
     if (root.value()->size == 0 && !root.value()->is_leaf) {
@@ -342,8 +348,6 @@ public:
 private:
   void move_to_leaf(Node *&cursor, int key) const {
     while (!cursor->is_leaf) {
-      std::cout << "line " << __LINE__ << std::endl;
-      // print_parent(cursor->parent, std::cout);
       size_t i = 0;
       while (i < cursor->size && key >= cursor->keys[i]) {
         ++i; // Find the index of the child to follow
@@ -689,6 +693,31 @@ private:
       return;
     }
 
+    /*
+    if ( L has ≥ ⌊(n+1)/2⌋ keys ) At least half full
+    {
+       return;   // Done
+    }
+    else
+    {
+        ---------------------------------------------------------
+        L underflows: fix the size of L with transfer or merge
+        ---------------------------------------------------------
+        if ( leftSibling(L) has ≥ ⌊(n+1)/2⌋ + 1 keys ){
+          1. transfer last key and ptr from leftSibling(L) into L;
+          2. update the search key in the parent node;
+        } else if ( rightSibling(L) has ≥ ⌊(n+1)/2⌋ + 1 keys ){
+          1. transfer first key and ptr from rightSibling(L) into L;
+          2. update the search key in the parent node;
+        } else if ( leftSibling(L) exists ) {
+          1. Merge leftSibling(L) + L + L's last pointer into leftSibling(L);        // Node L will be deleted !!
+          2. Delete key and right subtree in parent node;  // discuss next !!
+        } else {
+          1. Merge L + rightSibling(L) + last pointer into L;             // rightSibling(L) will be deleted !!!
+                2. Delete key and right subtree in parent node; // discuss next !!
+        }
+      }
+    */
     // Remove the key and shift the remaining keys
     for (size_t j = i; j < cursor->size - 1; ++j) {
       cursor->keys[j] = cursor->keys[j + 1];
@@ -746,7 +775,6 @@ private:
       // print_subtree_recursive(parent, 0, true, 0, std::cout);
     } else {
       std::cout << "Merging with right node" << std::endl;
-      Node *left = std::get<Node *>(parent->children[cursor_index - 1].value());
       Node *right = std::get<Node *>(parent->children[cursor_index + 1].value());
       merge_with_right(cursor, right, parent, cursor_index);
     }
@@ -783,7 +811,6 @@ private:
     cursor->keys[cursor->size].swap(right_sibling->keys[0]);
     cursor->children[cursor->size].swap(right_sibling->children[0]);
     if (cursor->children[0].has_value()) {
-      // std::variant<Node *, Order *> tmp = cursor->children[cursor->size].value();
       if (auto tmp = cursor->children[cursor->size].value(); std::holds_alternative<Node *>(tmp)) {
         std::get<Node *>(tmp)->parent = cursor;
       } else {
@@ -808,8 +835,11 @@ private:
   void merge_with_left(Node *cursor, Node *left, Node *parent, size_t index) {
     //  Move all keys and children from cursor to left sibling;
     // FIMXE (Peiyun) we might have overflow
+    // print_subtree_recursive(cursor, 0, true, 0, std::cout);
 
-    left->keys[left->size] = std::get<Node *>(cursor->children[0].value())->keys[0].value();
+    if (std::holds_alternative<Node *>(cursor->children[0].value())) {
+      left->keys[left->size] = std::get<Node *>(cursor->children[0].value())->keys[0].value();
+    }
     for (size_t i = 0; i < cursor->size; ++i) {
       left->keys[left->size + i + 1].swap(cursor->keys[i]);
       if (cursor->children[i].has_value()) {
@@ -847,6 +877,7 @@ private:
 
   void merge_with_right(Node *cursor, Node *right, Node *parent, size_t index) {
 
+    // print_subtree_recursive(cursor, 0, true, 0, std::cout);
     if (!cursor->is_leaf) {
       cursor->keys[cursor->size] = parent->keys[index];
       cursor->size += 1;
@@ -856,8 +887,7 @@ private:
       cursor->keys[cursor->size + i].swap(right->keys[i]);
       if (right->children[i].has_value()) {
         if (auto tmp = right->children[i].value(); std::holds_alternative<Node *>(tmp)) {
-          std::get<Node *>(right->children[i].value())->parent = cursor;
-          // std::get<Node *>(tmp)->parent = cursor;
+          std::get<Node *>(tmp)->parent = cursor;
         } else {
           std::cout << std::format("Invalid type in {}", __func__) << std::endl;
         }
@@ -866,8 +896,8 @@ private:
       }
       cursor->children[cursor->size + i].swap(right->children[i]);
     }
-    if (auto child = right->children[right->size]; child.has_value()) {
-      std::get<Node *>(right->children[right->size].value())->parent = cursor;
+    if (auto child = right->children[right->size]; child.has_value() && std::holds_alternative<Node *>(child.value())) {
+      std::get<Node *>(child.value())->parent = cursor;
     }
     cursor->children[cursor->size + right->size].swap(right->children[right->size]);
 
