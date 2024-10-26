@@ -307,7 +307,7 @@ public:
          and its record ptr from the node
       }
     */
-    if (!root) {
+    if (!root.has_value()) {
       std::cout << "Tree is empty. Nothing to remove." << std::endl;
       return;
     }
@@ -720,16 +720,18 @@ private:
     // Remove the key and shift the remaining keys
     for (size_t j = i; j < cursor->size - 1; ++j) {
       cursor->keys[j] = cursor->keys[j + 1];
-      cursor->keys[j + 1] = std::nullopt;
+      // cursor->keys[j + 1] = std::nullopt;
       cursor->children[j] = cursor->children[j + 1];
-      cursor->children[j + 1] = std::nullopt;
+      // cursor->children[j + 1] = std::nullopt;
     }
     --cursor->size;
+    cursor->keys[cursor->size].reset();
+    cursor->children[cursor->size].reset();
 
     // If the cursor is the root and now empty, the tree becomes empty
     if (cursor->is_root() && cursor->size == 0) {
       delete cursor;
-      root = std::nullopt;
+      root.reset();
       return;
     }
     //  If the leaf is not the root and now underflows, handle the underflow
@@ -739,24 +741,16 @@ private:
   }
 
   void redistribute_leaf_from_left(Node *cursor, Node *left, Node *parent, size_t index) {
-    // Move the last key from the left sibling to the cursor node
+    // Shift the keys and children in the cursor
     for (size_t i = cursor->size; i > 0; --i) {
       cursor->keys[i].swap(cursor->keys[i - 1]);
       cursor->children[i].swap(cursor->children[i - 1]);
     }
     ++cursor->size;
 
-    // Move the last key from the left sibling to the cursor node
+    // Move the last key from the left to the cursor node
     cursor->keys[0].swap(left->keys[left->size - 1]);
     cursor->children[0].swap(left->children[left->size - 1]);
-
-    if (cursor->children[0].has_value()) {
-      if (auto tmp = cursor->children[0].value(); std::holds_alternative<Order *>(tmp)) {
-        // std::get<Order *>(tmp)->parent = cursor;
-      } else {
-        std::cout << std::format("Invalid type in {}", __func__) << std::endl;
-      }
-    }
     --left->size;
 
     // Update the parent key
@@ -764,18 +758,12 @@ private:
   }
 
   void redistribute_leaf_from_right(Node *cursor, Node *right, Node *parent, size_t index) {
+    // Move the first key from right to the cursor node
     cursor->keys[cursor->size].swap(right->keys[0]);
     cursor->children[cursor->size].swap(right->children[0]);
-    if (cursor->children[0].has_value()) {
-      if (auto tmp = cursor->children[cursor->size].value(); std::holds_alternative<Order *>(tmp)) {
-        // std::get<Order *>(tmp)->parent = cursor;
-      } else {
-        std::cout << std::format("Invalid type in {}", __func__) << std::endl;
-      }
-    }
     ++cursor->size;
 
-    // Shift the keys in the right sibling
+    // Shift the keys and children in the right
     for (size_t i = 0; i < right->size - 1; ++i) {
       right->keys[i].swap(right->keys[i + 1]);
       right->children[i].swap(right->children[i + 1]);
@@ -787,8 +775,9 @@ private:
   }
 
   void merge_leaf_with_left(Node *cursor, Node *left, Node *parent, size_t index) {
-    //  Move all keys and children from cursor to left sibling;
+    //  Move all keys and children from cursor to left;
     left->keys[left->size] = cursor->keys[0];
+    left->size++;
     for (size_t i = 0; i < cursor->size; ++i) {
       left->keys[left->size + i + 1].swap(cursor->keys[i]);
       if (cursor->children[i].has_value()) {
