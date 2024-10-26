@@ -901,7 +901,7 @@ private:
     std::get<Node *>(cursor->children[0].value())->parent = cursor;
 
     if (cursor->children[0].has_value()) {
-      if (auto tmp = cursor->children[0].value(); std::holds_alternative<Order *>(tmp)) {
+      if (auto tmp = cursor->children[0].value(); std::holds_alternative<Node *>(tmp)) {
       } else {
         std::cout << std::format("Invalid type in {}", __func__) << std::endl;
       }
@@ -939,7 +939,7 @@ private:
   void merge_internal_with_left(Node *cursor, Node *left, Node *parent, size_t index) {
 
     // Move all keys and children from cursor to left
-    left->keys[left->size] = parent->keys[index];
+    left->keys[left->size] = parent->keys[index - 1];
     left->size++;
 
     // Move all keys and children from cursor to left sibling;
