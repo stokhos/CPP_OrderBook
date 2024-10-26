@@ -321,7 +321,7 @@ public:
     }
     remove_from_leaf(cursor, key);
 
-    if (root.value()->size == 0 && !root.value()->is_leaf) {
+    if (root.has_value() && root.value()->size == 0 && !root.value()->is_leaf) {
       Node *new_root = std::get<Node *>(*root.value()->children[0]);
       delete root.value();
       root.reset();
@@ -729,9 +729,9 @@ private:
     // If the cursor is the root and now empty, the tree becomes empty
     if (cursor->is_root() && cursor->size == 0) {
       delete cursor;
-      std::cout << "here" << std::endl;
+      // std::cout << "here" << std::endl;
       root = std::nullopt;
-      std::cout << "there" << std::endl;
+      // std::cout << "there" << std::endl;
       return;
     }
     //  If the leaf is not the root and now underflows, handle the underflow
@@ -756,7 +756,7 @@ private:
       if (auto tmp = cursor->children[0].value(); std::holds_alternative<Order *>(tmp)) {
         // std::get<Order *>(tmp)->parent = cursor;
       } else {
-        std::cout << "Invalid type in merge_with_right" << std::endl;
+        std::cout << std::format("Invalid type in {}", __func__) << std::endl;
       }
     }
     --left->size;
@@ -871,7 +871,7 @@ private:
     if (cursor_index > 0) {
       Node *left_sibling = std::get<Node *>(*parent->children[cursor_index - 1]);
       if (left_sibling->size > D) {
-        std::cout << "Redistributing from left leaf" << std::endl;
+        // std::cout << std::format("Redistributing from left leaf, {}", __func__) << std::endl;
         redistribute_leaf_from_left(cursor, left_sibling, parent, cursor_index);
         return;
       }
@@ -881,7 +881,7 @@ private:
     if (cursor_index >= 0 && cursor_index < parent->size - 1) {
       Node *right_sibling = std::get<Node *>(*parent->children[cursor_index + 1]);
       if (right_sibling->size > D) {
-        std::cout << "Redistributing from right leaf" << std::endl;
+        // std::cout << std::format("Redistributing from right leaf, {}", __func__) << std::endl;
         redistribute_leaf_from_right(cursor, right_sibling, parent, cursor_index);
         return;
       }
@@ -889,11 +889,11 @@ private:
 
     // If borrow is not possible, merge with a sibling
     if (cursor_index > 0) {
-      std::cout << "Merging with left leaf node" << std::endl;
+      // std::cout << std::format("Merging with left leaf node, {}", __func__) << std::endl;
       Node *left = std::get<Node *>(parent->children[cursor_index - 1].value());
       merge_leaf_with_left(cursor, left, parent, cursor_index - 1);
     } else {
-      std::cout << "Merging with right leaf node" << std::endl;
+      // std::cout << std::format("Merging with right leaf node, {}", __func__) << std::endl;
       Node *right = std::get<Node *>(parent->children[cursor_index + 1].value());
       merge_leaf_with_right(cursor, right, parent, cursor_index);
     }
@@ -901,27 +901,38 @@ private:
 
   void redistribute_from_left(Node *cursor, Node *left, Node *parent, size_t index) {
     // Move the last key from the left sibling to the cursor node
-    for (size_t i = cursor->size; i > 0; --i) {
+    // print_subtree_recursive(cursor, 4, true, 0);
+    // print_subtree_recursive(left, 2, true, 0);
+    // print_subtree_recursive(cursor, 4, true, 0);
+    for (size_t i = cursor->size + 1; i > 0; --i) {
       cursor->keys[i].swap(cursor->keys[i - 1]);
       cursor->children[i].swap(cursor->children[i - 1]);
     }
-    ++cursor->size;
+    cursor->size++;
 
-    // Move the last key from the left sibling to the cursor node
-    cursor->keys[0].swap(left->keys[left->size - 1]);
-    cursor->children[0].swap(left->children[left->size - 1]);
+    // print_subtree_recursive(parent, 6, true, 0);
+    //  Move the last key from the left sibling to the cursor node
+    left->keys[left->size - 1].reset();
+    std::variant<Node *, Order *> child = left->children[left->size].value();
+    std::get<Node *>(child)->parent = cursor;
+
+    // print_subtree_recursive(cursor->children[1], 2, true, 0);
+    cursor->keys[0] = std::get<Node *>(cursor->children[1].value())->keys[0];
+    cursor->children[0].swap(left->children[left->size]);
+    // print_subtree_recursive(cursor, 4, true, 0);
 
     if (cursor->children[0].has_value()) {
       if (auto tmp = cursor->children[0].value(); std::holds_alternative<Order *>(tmp)) {
         // std::get<Order *>(tmp)->parent = cursor;
       } else {
-        std::cout << "Invalid type in merge_with_right" << std::endl;
+        std::cout << std::format("Invalid type in {}", __func__) << std::endl;
       }
     }
     --left->size;
 
     // Update the parent key
     parent->keys[index - 1] = cursor->keys[0];
+    // print_subtree_recursive(parent, 6, true, 0);
   }
 
   void redistribute_from_right(Node *cursor, Node *right, Node *parent, size_t index) {
@@ -996,6 +1007,7 @@ private:
   void merge_with_right(Node *cursor, Node *right, Node *parent, size_t index) {
     //  Move all keys and children from right sibling to cursor
 
+    // print_subtree_recursive(cursor, 0, true, 0);
     cursor->keys[cursor->size] = std::get<Node *>(right->children[0].value())->keys[0];
     for (size_t i = 0; i < right->size; ++i) {
       cursor->keys[cursor->size + i + 1].swap(right->keys[i]);
@@ -1003,10 +1015,11 @@ private:
       std::get<Node *>(cursor->children[cursor->size + i + 1].value())->parent = cursor;
     }
     cursor->children[cursor->size + right->size + 1].swap(right->children[right->size]);
+    // print_subtree_recursive(cursor, 2, true, 0);
     // cursor->children[cursor->size + right->size + 2].swap(right->children[right->size + 1]);
-    //  std::get<Node *>(cursor->children[cursor->size + right->size].value())->parent = cursor;
+    // std::get<Node *>(cursor->children[cursor->size + right->size].value())->parent = cursor;
     std::get<Node *>(cursor->children[cursor->size + right->size + 1].value())->parent = cursor;
-    cursor->size += right->size + 2;
+    cursor->size += right->size + 1;
 
     //  Remove the key from parent and adjust children
     for (size_t i = index; i < parent->size - 1; ++i) {
@@ -1032,7 +1045,7 @@ private:
     if (cursor_index > 0) {
       Node *left_sibling = std::get<Node *>(*parent->children[cursor_index - 1]);
       if (left_sibling->size > D) {
-        std::cout << "Redistributing from internal left node" << std::endl;
+        // std::cout << std::format("Redistributing from internal left node, {}", __func__) << std::endl;
         redistribute_from_left(cursor, left_sibling, parent, cursor_index);
         return;
       }
@@ -1042,7 +1055,7 @@ private:
     if (cursor_index >= 0 && cursor_index < parent->size) {
       Node *right_sibling = std::get<Node *>(*parent->children[cursor_index + 1]);
       if (right_sibling->size > D) {
-        std::cout << "Redistributing from internal right node" << std::endl;
+        // std::cout << std::format("Redistributing from internal right node, {}", __func__) << std::endl;
         redistribute_from_right(cursor, right_sibling, parent, cursor_index);
         return;
       }
@@ -1050,11 +1063,11 @@ private:
 
     // If borrow is not possible, merge with a sibling
     if (cursor_index > 0) {
-      std::cout << "Merging with left node" << std::endl;
+      // std::cout << std::format("Merging with left node {}", __func__) << std::endl;
       Node *left = std::get<Node *>(parent->children[cursor_index - 1].value());
       merge_with_left(cursor, left, parent, cursor_index - 1);
     } else {
-      std::cout << "Merging with right node" << std::endl;
+      // std::cout << std::format("Merging with right node {}", __func__) << std::endl;
       Node *right = std::get<Node *>(parent->children[cursor_index + 1].value());
       merge_with_right(cursor, right, parent, cursor_index);
     }
@@ -1070,4 +1083,5 @@ void print_bplus_tree(const BPlusTree tree, bool ignore_order = true, std::ostre
   }
   os << Color::RED << "Empty tree" << Color::RESET << "\n";
 };
+
 #endif // BPlusTree_H

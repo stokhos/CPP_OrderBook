@@ -50,20 +50,20 @@ void test_remove() {
   print_bplus_tree(tree);
 
   // Remove some keys
-  std::cout << "Removing 3" << std::endl;
+  // std::cout << "Removing 3" << std::endl;
   tree.remove(3);
-  std::cout << "After removing 3" << std::endl;
-  print_bplus_tree(tree);
-  std::cout << "Removing 7" << std::endl;
+  // std::cout << "After removing 3" << std::endl;
+  // print_bplus_tree(tree);
+  // std::cout << "Removing 7" << std::endl;
   tree.remove(7);
-  std::cout << "After removing 7" << std::endl;
-  print_bplus_tree(tree);
+  // std::cout << "After removing 7" << std::endl;
+  // print_bplus_tree(tree);
   // std::cout << "\nAfter removing 7\n" << tree << std::endl;
-  std::cout << "Removing 1" << std::endl;
+  // std::cout << "Removing 1" << std::endl;
   tree.remove(1);
-  std::cout << "After removing 1" << std::endl;
-  print_bplus_tree(tree);
-  // return;
+  // std::cout << "After removing 1" << std::endl;
+  // print_bplus_tree(tree);
+  //  return;
 
   // Verify removed keys are not found
   assert(!tree.search(3).has_value());
@@ -91,7 +91,7 @@ void test_debug_1() {
     tree.remove(key);
     print_bplus_tree(tree, true);
   }
-  std::cout << "Debug 1 passed" << std::endl;
+  std::cout << "Debug 1 passed\n" << std::endl;
 }
 
 void test_debug_2() {
@@ -105,9 +105,10 @@ void test_debug_2() {
   for (int key : keys) {
     std::cout << "Removing key: " << key << std::endl;
     tree.remove(key);
+    std::cout << std::format("Key {} removed ", key) << std::endl;
     print_bplus_tree(tree, true);
   }
-  std::cout << "Debug 2 passed" << std::endl;
+  std::cout << "Debug 2 passed\n" << std::endl;
 }
 
 void test_random_dataset() {
@@ -138,9 +139,9 @@ void test_random_dataset() {
   print_bplus_tree(tree, true, std::cout);
 
   //// Remove half of the keys
-  std::cout << "Removing keys..." << std::endl;
+  // std::cout << "Removing keys..." << std::endl;
   for (int i = 0; i < 500; ++i) {
-    std::cout << "Removing key: " << keys[i] << std::endl;
+    // std::cout << "Removing key: " << keys[i] << std::endl;
     tree.remove(keys[i]);
     print_bplus_tree(tree);
     if (i == 16) {
@@ -184,9 +185,9 @@ void test_large_dataset() {
   // print_bplus_tree(tree);
 
   // Remove half of the keys
-  std::cout << "Removing keys..." << std::endl;
+  // std::cout << "Removing keys..." << std::endl;
   for (int i = 0; i < 500; ++i) {
-    std::cout << "Removing key: " << keys[i] << std::endl;
+    // std::cout << "Removing key: " << keys[i] << std::endl;
     tree.remove(keys[i]);
     // print_bplus_tree(tree);
   }
@@ -238,10 +239,10 @@ void test_range_search() {
 
 int main() {
   // test_insert_and_search();
-  // test_remove();
-  // test_debug_1();
+  test_remove();
+  test_debug_1();
   test_debug_2();
-  // test_random_dataset();
+  test_random_dataset();
   // test_large_dataset();
   // test_range_search();
 
