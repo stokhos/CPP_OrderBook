@@ -219,7 +219,6 @@ void print_subtree_recursive(const std::optional<std::variant<Node *, Order *>> 
         if (tmp_node->children[i].has_value()) {
           auto child = tmp_node->children[i];
           print_subtree_recursive(child, level + 1, ignore_order, i, os);
-          //}
         }
       }
     }
@@ -349,7 +348,7 @@ private:
   void move_to_leaf(Node *&cursor, int key) const {
     while (!cursor->is_leaf) {
       size_t i = 0;
-      while (i < cursor->size && key >= cursor->keys[i]) {
+      while (i < cursor->size && cursor->keys[i].has_value() && key >= cursor->keys[i].value()) {
         ++i; // Find the index of the child to follow
       }
       if (i < cursor->size) {
@@ -730,7 +729,9 @@ private:
     // If the cursor is the root and now empty, the tree becomes empty
     if (cursor->is_root() && cursor->size == 0) {
       delete cursor;
-      root = nullptr;
+      std::cout << "here" << std::endl;
+      root = std::nullopt;
+      std::cout << "there" << std::endl;
       return;
     }
     //  If the leaf is not the root and now underflows, handle the underflow
@@ -925,11 +926,9 @@ private:
 
   void redistribute_from_right(Node *cursor, Node *right, Node *parent, size_t index) {
     cursor->keys[cursor->size] = (std::get<Node *>(right->children[0].value())->keys[0]);
+    std::get<Node *>(right->children[0].value())->parent = cursor;
     cursor->children[cursor->size + 1].swap(right->children[0]);
-    // print_subtree_recursive(cursor, 2, true, 0);
-    //  print_subtree_recursive(right, 2, true, 0);
     parent->keys[index] = right->keys[0];
-    // print_subtree_recursive(parent, 4, true, 0);
 
     if (cursor->children[0].has_value()) {
       if (auto tmp = cursor->children[cursor->size].value(); std::holds_alternative<Node *>(tmp)) {
@@ -958,7 +957,6 @@ private:
     //  Move all keys and children from cursor to left sibling;
     for (size_t i = 0; i < cursor->size; ++i) {
       left->keys[left->size + i + 1].swap(cursor->keys[i]);
-      // print_subtree_recursive(left, 4i + 1, true, 0);
       if (cursor->children[i].has_value()) {
         if (auto tmp = cursor->children[i].value(); std::holds_alternative<Node *>(tmp)) {
           std::get<Node *>(tmp)->parent = left;
@@ -997,27 +995,20 @@ private:
 
   void merge_with_right(Node *cursor, Node *right, Node *parent, size_t index) {
     //  Move all keys and children from right sibling to cursor
-    for (size_t i = 0; i < right->size; ++i) {
-      cursor->keys[cursor->size + i].swap(right->keys[i]);
-      if (right->children[i].has_value()) {
-        if (auto tmp = right->children[i].value(); std::holds_alternative<Order *>(tmp)) {
-          // std::get<Order *>(tmp)->parent = cursor;
-        } else {
-          std::cout << std::format("Invalid type in {}", __func__) << std::endl;
-        }
-      } else {
-        std::cout << std::format("No value in {}", __func__) << std::endl;
-      }
-      cursor->children[cursor->size + i].swap(right->children[i]);
-    }
-    if (auto child = right->children[right->size];
-        child.has_value() && std::holds_alternative<Order *>(child.value())) {
-      // std::get<Order *>(child.value())->parent = cursor;
-    }
-    cursor->children[cursor->size + right->size].swap(right->children[right->size]);
-    cursor->size += right->size;
 
-    // Remove the key from parent and adjust children
+    cursor->keys[cursor->size] = std::get<Node *>(right->children[0].value())->keys[0];
+    for (size_t i = 0; i < right->size; ++i) {
+      cursor->keys[cursor->size + i + 1].swap(right->keys[i]);
+      cursor->children[cursor->size + i + 1].swap(right->children[i]);
+      std::get<Node *>(cursor->children[cursor->size + i + 1].value())->parent = cursor;
+    }
+    cursor->children[cursor->size + right->size + 1].swap(right->children[right->size]);
+    // cursor->children[cursor->size + right->size + 2].swap(right->children[right->size + 1]);
+    //  std::get<Node *>(cursor->children[cursor->size + right->size].value())->parent = cursor;
+    std::get<Node *>(cursor->children[cursor->size + right->size + 1].value())->parent = cursor;
+    cursor->size += right->size + 2;
+
+    //  Remove the key from parent and adjust children
     for (size_t i = index; i < parent->size - 1; ++i) {
       parent->keys[i] = parent->keys[i + 1];
       parent->children[i + 1] = parent->children[i + 2];
@@ -1036,7 +1027,6 @@ private:
   void handle_internal_underflow(Node *cursor) {
     Node *parent = cursor->parent.value();
 
-    // print_subtree_recursive(cursor, 0, true, 0);
     size_t cursor_index = find_child_index(parent, cursor);
     // Try to borrow from left sibling
     if (cursor_index > 0) {

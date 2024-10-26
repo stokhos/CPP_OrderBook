@@ -69,9 +69,9 @@ void test_remove() {
   assert(!tree.search(3).has_value());
   assert(!tree.search(7).has_value());
   assert(!tree.search(1).has_value());
-
   // Verify remaining keys are still present
   for (int key : {2, 4, 5, 6, 8, 9, 10}) {
+    // std::cout << "Searching " << key << std::endl;
     assert(tree.search(key).has_value());
   }
 
@@ -91,6 +91,7 @@ void test_debug_1() {
     tree.remove(key);
     print_bplus_tree(tree, true);
   }
+  std::cout << "Debug 1 passed" << std::endl;
 }
 
 void test_debug_2() {
@@ -105,10 +106,8 @@ void test_debug_2() {
     std::cout << "Removing key: " << key << std::endl;
     tree.remove(key);
     print_bplus_tree(tree, true);
-    if (key == 16) {
-      return;
-    }
   }
+  std::cout << "Debug 2 passed" << std::endl;
 }
 
 void test_random_dataset() {
@@ -240,7 +239,8 @@ void test_range_search() {
 int main() {
   // test_insert_and_search();
   // test_remove();
-  test_debug_1();
+  // test_debug_1();
+  test_debug_2();
   // test_random_dataset();
   // test_large_dataset();
   // test_range_search();
