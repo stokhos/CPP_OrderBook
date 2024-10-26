@@ -22,9 +22,9 @@ template <class... Ts> struct overloaded : Ts... {
 };
 
 struct Order {
-  int key;
-  int price;
-  int quantity;
+  size_t key;
+  size_t price;
+  size_t quantity;
 };
 
 std::string print_order(const Order *order, std::ostream &os) {
@@ -40,7 +40,7 @@ struct Node {
   bool is_leaf;
   std::size_t size;                                                     // Current number of keys
   std::optional<Node *> parent;                                         // Pointer to the parent node
-  std::array<std::optional<int>, M> keys;                               // Keys in the node
+  std::array<std::optional<size_t>, M> keys;                            // Keys in the node
   std::array<std::optional<std::variant<Node *, Order *>>, N> children; // Child nodes or leaf nodes
 
 public:
@@ -66,8 +66,8 @@ const std::string CYAN = "\033[36m";
 const std::string BOLD = "\033[1m";
 } // namespace Color
 
-void print_indent(int level, std::ostream &os) {
-  for (int i = 0; i < level; ++i) {
+void print_indent(size_t level, std::ostream &os) {
+  for (size_t i = 0; i < level; ++i) {
     os << "  ";
   }
 }
@@ -90,23 +90,23 @@ std::string get_node_color(const std::optional<std::variant<Node *, Order *>> ov
                     ov_node.value());
 }
 
-std::string get_node_index(const std::variant<Node *, Order *> v_node, size_t cursor_index = 0) {
+std::string get_node_index(const std::variant<Node *, Order *> v_node, size_t index = 0) {
   if (std::holds_alternative<Node *>(v_node)) {
     Node *node = std::get<Node *>(v_node);
-    return std::format("{} [{}]: ", node->is_root() ? "Root" : std::format("Child {}", cursor_index),
+    return std::format("{} [{}]: ", node->is_root() ? "Root" : std::format("Child {}", index),
                        node->is_leaf ? "LEAF" : "INTERNAL");
   } else {
-    return std::format("Order {} ", cursor_index);
+    return std::format("Order {} ", index);
   }
 }
 
-std::string get_node_type(const std::variant<Node *, Order *> v_node, size_t cursor_index = 0) {
+std::string get_node_type(const std::variant<Node *, Order *> v_node, size_t index = 0) {
   if (std::holds_alternative<Node *>(v_node)) {
     Node *node = std::get<Node *>(v_node);
-    return std::format("{} [{}]: ", node->is_root() ? "Root" : std::format("Child {}", cursor_index),
+    return std::format("{} [{}]: ", node->is_root() ? "Root" : std::format("Child {}", index),
                        node->is_leaf ? "LEAF" : "INTERNAL");
   } else {
-    return std::format("Order {} ", cursor_index);
+    return std::format("Order {} ", index);
   }
 }
 
@@ -170,7 +170,7 @@ void print_size(const std::variant<Node *, Order *> v_node, std::ostream &os) {
   }
 }
 
-void print_leaf(const std::variant<Node *, Order *> v_node, int level, bool ignore_order, std::ostream &os) {
+void print_leaf(const std::variant<Node *, Order *> v_node, size_t level, bool ignore_order, std::ostream &os) {
   if (ignore_order) {
     return;
   }
@@ -195,14 +195,14 @@ void print_parent(const std::optional<Node *> o_node, std::ostream &os) {
   }
 }
 
-void print_subtree_recursive(const std::optional<std::variant<Node *, Order *>> ov_node, int level, bool ignore_order,
-                             size_t cursor_index, std::ostream &os = std::cout) {
+void print_subtree_recursive(const std::optional<std::variant<Node *, Order *>> ov_node, size_t level,
+                             bool ignore_order, size_t index, std::ostream &os = std::cout) {
   if (!ov_node.has_value()) {
     return;
   }
   std::string node_color = get_node_color(ov_node);
   print_indent(level, os);
-  os << node_color << get_node_type(ov_node.value(), cursor_index) << Color::RESET;
+  os << node_color << get_node_type(ov_node.value(), index) << Color::RESET;
   print_keys(ov_node.value(), os);
   print_parent(std::get<Node *>(ov_node.value())->parent, os);
   print_children(ov_node.value(), os);
@@ -233,7 +233,7 @@ void check_variant(std::variant<Node *, Order *> &var) {
              var);
 }
 
-void log(const std::optional<std::variant<Node *, Order *>> &cursor, const std::string &file, int line,
+void log(const std::optional<std::variant<Node *, Order *>> &cursor, const std::string &file, size_t line,
          const std::string &func) {
   std::cout << file << ", " << line << ", " << func << ": " << std::endl;
   print_subtree_recursive(cursor, 0, false, 0, std::cout);
@@ -246,7 +246,7 @@ public:
   BPlusTree() = default;
   [[nodiscard]] std::optional<Node *> get_root() const noexcept { return root; }
 
-  std::optional<Node *> range_search(int key) const {
+  std::optional<Node *> range_search(size_t key) const {
     if (!root) {
       return std::nullopt;
     } else {
@@ -256,7 +256,7 @@ public:
     }
   };
 
-  std::optional<Order *> search(int key) const {
+  std::optional<Order *> search(size_t key) const {
     if (!root) {
       return std::nullopt;
     } else {
@@ -297,7 +297,7 @@ public:
     insert_into_leaf(cursor, order);
   };
 
-  void remove(int key) {
+  void remove(size_t key) {
     /*
       if ( x not found ){
          return;
@@ -345,7 +345,7 @@ public:
   */
 
 private:
-  void move_to_leaf(Node *&cursor, int key) const {
+  void move_to_leaf(Node *&cursor, size_t key) const {
     while (!cursor->is_leaf) {
       size_t i = 0;
       while (i < cursor->size && cursor->keys[i].has_value() && key >= cursor->keys[i].value()) {
@@ -416,7 +416,7 @@ private:
     cursor->keys[i] = order->key;
     // Assuming order is the value stored in the leaf
     cursor->children[i] = order;
-    ++cursor->size;
+    cursor->size++;
 
     //  Check if the leaf node is full and needs to be split
     if (cursor->is_full()) {
@@ -557,7 +557,7 @@ private:
     parent->keys[i] = key;
     parent->children[i + 1] = right;
     right->parent = parent;
-    ++parent->size;
+    parent->size++;
 
     //  Check if the parent node is full and needs to be split
     if (parent->is_full()) {
@@ -638,7 +638,7 @@ private:
     parent->keys[i] = key;
     parent->children[i + 1] = right;
     right->parent = parent;
-    ++parent->size;
+    parent->size++;
 
     //  Check if the parent node is full and needs to be split
     if (parent->is_full()) {
@@ -682,7 +682,7 @@ private:
     return -1; // This should never happen if the tree is correctly structured
   }
 
-  void remove_from_leaf(Node *cursor, int key) {
+  void remove_from_leaf(Node *cursor, size_t key) {
     size_t i = 0;
     while (i < cursor->size && key > cursor->keys[i]) {
       ++i;
@@ -724,9 +724,18 @@ private:
       cursor->children[j] = cursor->children[j + 1];
       // cursor->children[j + 1] = std::nullopt;
     }
-    --cursor->size;
+    cursor->size--;
     cursor->keys[cursor->size].reset();
     cursor->children[cursor->size].reset();
+
+    // FIXME (Peiyun) Need to update leaf node kess
+    if (!cursor->is_root()) {
+      Node *parent = cursor->parent.value();
+      size_t index = find_child_index(parent, cursor);
+      if (index > 0) {
+        parent->keys[index - 1] = cursor->keys[0];
+      }
+    }
 
     // If the cursor is the root and now empty, the tree becomes empty
     if (cursor->is_root() && cursor->size == 0) {
@@ -746,12 +755,12 @@ private:
       cursor->keys[i].swap(cursor->keys[i - 1]);
       cursor->children[i].swap(cursor->children[i - 1]);
     }
-    ++cursor->size;
+    cursor->size++;
 
     // Move the last key from the left to the cursor node
     cursor->keys[0].swap(left->keys[left->size - 1]);
     cursor->children[0].swap(left->children[left->size - 1]);
-    --left->size;
+    left->size--;
 
     // Update the parent key
     parent->keys[index - 1] = cursor->keys[0];
@@ -761,25 +770,23 @@ private:
     // Move the first key from right to the cursor node
     cursor->keys[cursor->size].swap(right->keys[0]);
     cursor->children[cursor->size].swap(right->children[0]);
-    ++cursor->size;
+    cursor->size++;
 
     // Shift the keys and children in the right
     for (size_t i = 0; i < right->size - 1; ++i) {
       right->keys[i].swap(right->keys[i + 1]);
       right->children[i].swap(right->children[i + 1]);
     }
-    --right->size;
+    right->size--;
 
     // Update the parent key
     parent->keys[index] = right->keys[0];
   }
 
   void merge_leaf_with_left(Node *cursor, Node *left, Node *parent, size_t index) {
-    //  Move all keys and children from cursor to left;
-    left->keys[left->size] = cursor->keys[0];
-    left->size++;
+    // Move all keys and children from cursor to left;
     for (size_t i = 0; i < cursor->size; ++i) {
-      left->keys[left->size + i + 1].swap(cursor->keys[i]);
+      left->keys[left->size + i].swap(cursor->keys[i]);
       if (cursor->children[i].has_value()) {
         if (auto tmp = cursor->children[i].value(); std::holds_alternative<Order *>(tmp)) {
           // std::get<Order *>(tmp)->parent = left;
@@ -796,12 +803,12 @@ private:
 
     // Remove the key from parent and adjust children
     for (size_t i = index; i < parent->size - 1; ++i) {
-      parent->keys[i] = parent->keys[i + 1];
-      parent->children[i + 1] = parent->children[i + 2];
+      parent->keys[i].swap(parent->keys[i + 1]);
+      parent->children[i + 1].swap(parent->children[i + 2]);
     }
     parent->keys[parent->size - 1].reset();
     parent->children[parent->size].reset();
-    --parent->size;
+    parent->size--;
 
     // Delete the empty cursor node
     delete cursor;
@@ -813,7 +820,7 @@ private:
   }
 
   void merge_leaf_with_right(Node *cursor, Node *right, Node *parent, size_t index) {
-    //  Move all keys and children from right sibling to cursor
+    // Move all keys and children from right sibling to cursor
     for (size_t i = 0; i < right->size; ++i) {
       cursor->keys[cursor->size + i].swap(right->keys[i]);
       if (right->children[i].has_value()) {
@@ -827,19 +834,17 @@ private:
       }
       cursor->children[cursor->size + i].swap(right->children[i]);
     }
-    if (auto child = right->children[right->size];
-        child.has_value() && std::holds_alternative<Order *>(child.value())) {
-      // std::get<Order *>(child.value())->parent = cursor;
-    }
-    cursor->children[cursor->size + right->size].swap(right->children[right->size]);
     cursor->size += right->size;
+    right->size = 0;
 
     // Remove the key from parent and adjust children
     for (size_t i = index; i < parent->size - 1; ++i) {
-      parent->keys[i] = parent->keys[i + 1];
-      parent->children[i + 1] = parent->children[i + 2];
+      parent->keys[i].swap(parent->keys[i + 1]);
+      parent->children[i + 1].swap(parent->children[i + 2]);
     }
-    --parent->size;
+    parent->keys[parent->size - 1].reset();
+    parent->children[parent->size].reset();
+    parent->size--;
 
     // Delete the empty right sibling node
     delete right;
@@ -853,50 +858,47 @@ private:
   void handle_leaf_underflow(Node *cursor) {
     Node *parent = cursor->parent.value();
 
-    size_t cursor_index = find_child_index(parent, cursor);
-    // Try to borrow from left sibling
-    if (cursor_index > 0) {
-      Node *left_sibling = std::get<Node *>(*parent->children[cursor_index - 1]);
-      if (left_sibling->size > D) {
-        redistribute_leaf_from_left(cursor, left_sibling, parent, cursor_index);
+    size_t index = find_child_index(parent, cursor);
+    // Try to borrow from left
+    if (index > 0) {
+      Node *left = std::get<Node *>(*parent->children[index - 1]);
+      if (left->size > D) {
+        redistribute_leaf_from_left(cursor, left, parent, index);
         return;
       }
     }
 
-    // Try to borrow from right sibling
-    if (cursor_index >= 0 && cursor_index < parent->size - 1) {
-      Node *right_sibling = std::get<Node *>(*parent->children[cursor_index + 1]);
-      if (right_sibling->size > D) {
-        redistribute_leaf_from_right(cursor, right_sibling, parent, cursor_index);
+    // Try to borrow from right
+    if (index >= 0 && index < parent->size - 1) {
+      Node *right = std::get<Node *>(*parent->children[index + 1]);
+      if (right->size > D) {
+        redistribute_leaf_from_right(cursor, right, parent, index);
         return;
       }
     }
 
     // If borrow is not possible, merge with a sibling
-    if (cursor_index > 0) {
-      Node *left = std::get<Node *>(parent->children[cursor_index - 1].value());
-      merge_leaf_with_left(cursor, left, parent, cursor_index - 1);
+    if (index > 0) {
+      Node *left = std::get<Node *>(parent->children[index - 1].value());
+      merge_leaf_with_left(cursor, left, parent, index - 1);
     } else {
-      Node *right = std::get<Node *>(parent->children[cursor_index + 1].value());
-      merge_leaf_with_right(cursor, right, parent, cursor_index);
+      Node *right = std::get<Node *>(parent->children[index + 1].value());
+      merge_leaf_with_right(cursor, right, parent, index);
     }
   }
 
   void redistribute_internal_from_left(Node *cursor, Node *left, Node *parent, size_t index) {
-    // Move the last key from the left sibling to the cursor node
-    for (size_t i = cursor->size + 1; i > 0; --i) {
+    // Shift key and children in cursor to the right
+    cursor->size++;
+    for (size_t i = cursor->size; i > 0; --i) {
       cursor->keys[i].swap(cursor->keys[i - 1]);
       cursor->children[i].swap(cursor->children[i - 1]);
     }
-    cursor->size++;
+    cursor->keys[0].swap(parent->keys[0]);
 
-    //  Move the last key from the left sibling to the cursor node
-    left->keys[left->size - 1].reset();
-    std::variant<Node *, Order *> child = left->children[left->size].value();
-    std::get<Node *>(child)->parent = cursor;
-
-    cursor->keys[0] = std::get<Node *>(cursor->children[1].value())->keys[0];
+    // Move the last last child from the left to the cursor node
     cursor->children[0].swap(left->children[left->size]);
+    std::get<Node *>(cursor->children[0].value())->parent = cursor;
 
     if (cursor->children[0].has_value()) {
       if (auto tmp = cursor->children[0].value(); std::holds_alternative<Order *>(tmp)) {
@@ -904,10 +906,10 @@ private:
         std::cout << std::format("Invalid type in {}", __func__) << std::endl;
       }
     }
-    --left->size;
+    left->size--;
 
     // Update the parent key
-    parent->keys[index - 1] = cursor->keys[0];
+    parent->keys[index - 1].swap(left->keys[left->size]);
   }
 
   void redistribute_internal_from_right(Node *cursor, Node *right, Node *parent, size_t index) {
@@ -924,49 +926,41 @@ private:
         std::cout << std::format("Invalid type in {}", __func__) << std::endl;
       }
     }
-    ++cursor->size;
+    cursor->size++;
 
     // Shift the keys in the right sibling
     for (size_t i = 0; i < right->size; ++i) {
       right->keys[i].swap(right->keys[i + 1]);
       right->children[i].swap(right->children[i + 1]);
     }
-    --right->size;
+    right->size--;
   }
 
   void merge_internal_with_left(Node *cursor, Node *left, Node *parent, size_t index) {
-    auto child = std::get<Node *>(cursor->children[0].value())->keys[0];
-    left->keys[left->size] = std::get<Node *>(cursor->children[0].value())->keys[0];
 
-    //  Move all keys and children from cursor to left sibling;
+    // Move all keys and children from cursor to left
+    left->keys[left->size] = parent->keys[index];
+    left->size++;
+
+    // Move all keys and children from cursor to left sibling;
     for (size_t i = 0; i < cursor->size; ++i) {
-      left->keys[left->size + i + 1].swap(cursor->keys[i]);
-      if (cursor->children[i].has_value()) {
-        if (auto tmp = cursor->children[i].value(); std::holds_alternative<Node *>(tmp)) {
-          std::get<Node *>(tmp)->parent = left;
-        } else {
-          std::cout << std::format("Invalid type in {}", __func__) << std::endl;
-        }
-      } else {
-        std::cout << std::format("No value in {}", __func__) << std::endl;
-      }
-      left->children[left->size + i + 1].swap(cursor->children[i]);
+      left->keys[left->size + i].swap(cursor->keys[i]);
+      left->children[left->size + i].swap(cursor->children[i]);
+      std::get<Node *>(left->children[left->size + i].value())->parent = left;
     }
-    left->children[left->size + cursor->size + 1].swap(cursor->children[cursor->size]);
-    if (left->children[left->size + cursor->size + 1].has_value()) {
-      std::get<Node *>(left->children[left->size + cursor->size + 1].value())->parent = left;
-    }
-    left->size += cursor->size + 1;
-    cursor->size = 0;
+
+    left->children[left->size + cursor->size].swap(cursor->children[cursor->size]);
+    std::get<Node *>(left->children[left->size + cursor->size].value())->parent = left;
+    left->size += cursor->size;
 
     // Remove the key from parent and adjust children
     for (size_t i = index; i < parent->size - 1; ++i) {
       parent->keys[i] = parent->keys[i + 1];
       parent->children[i + 1] = parent->children[i + 2];
     }
-    parent->keys[parent->size - 1].reset();
-    parent->children[parent->size].reset();
-    --parent->size;
+    parent->size--;
+    parent->keys[parent->size].reset();
+    parent->children[parent->size + 1].reset();
 
     // Delete the empty cursor node
     delete cursor;
@@ -978,24 +972,28 @@ private:
   }
 
   void merge_internal_with_right(Node *cursor, Node *right, Node *parent, size_t index) {
-    //  Move all keys and children from right sibling to cursor
+    //  Move all keys and children from right to cursor
+    cursor->keys[cursor->size] = parent->keys[index];
+    cursor->size++;
 
-    cursor->keys[cursor->size] = std::get<Node *>(right->children[0].value())->keys[0];
     for (size_t i = 0; i < right->size; ++i) {
-      cursor->keys[cursor->size + i + 1].swap(right->keys[i]);
-      cursor->children[cursor->size + i + 1].swap(right->children[i]);
-      std::get<Node *>(cursor->children[cursor->size + i + 1].value())->parent = cursor;
+      cursor->keys[cursor->size + i].swap(right->keys[i]);
+      cursor->children[cursor->size + i].swap(right->children[i]);
+      std::get<Node *>(cursor->children[cursor->size + i].value())->parent = cursor;
     }
-    cursor->children[cursor->size + right->size + 1].swap(right->children[right->size]);
-    std::get<Node *>(cursor->children[cursor->size + right->size + 1].value())->parent = cursor;
-    cursor->size += right->size + 1;
+
+    cursor->children[cursor->size + right->size].swap(right->children[right->size]);
+    std::get<Node *>(cursor->children[cursor->size + right->size].value())->parent = cursor;
+    cursor->size += right->size;
 
     //  Remove the key from parent and adjust children
     for (size_t i = index; i < parent->size - 1; ++i) {
-      parent->keys[i] = parent->keys[i + 1];
-      parent->children[i + 1] = parent->children[i + 2];
+      parent->keys[i].swap(parent->keys[i + 1]);
+      parent->children[i + 1].swap(parent->children[i + 2]);
     }
-    --parent->size;
+    parent->size--;
+    parent->keys[parent->size].reset();
+    parent->children[parent->size + 1].reset();
 
     // Delete the empty right sibling node
     delete right;
@@ -1009,32 +1007,32 @@ private:
   void handle_internal_underflow(Node *cursor) {
     Node *parent = cursor->parent.value();
 
-    size_t cursor_index = find_child_index(parent, cursor);
+    size_t index = find_child_index(parent, cursor);
     // Try to borrow from left sibling
-    if (cursor_index > 0) {
-      Node *left_sibling = std::get<Node *>(*parent->children[cursor_index - 1]);
+    if (index > 0) {
+      Node *left_sibling = std::get<Node *>(*parent->children[index - 1]);
       if (left_sibling->size > D) {
-        redistribute_internal_from_left(cursor, left_sibling, parent, cursor_index);
+        redistribute_internal_from_left(cursor, left_sibling, parent, index);
         return;
       }
     }
 
     // Try to borrow from right sibling
-    if (cursor_index >= 0 && cursor_index < parent->size) {
-      Node *right_sibling = std::get<Node *>(*parent->children[cursor_index + 1]);
+    if (index >= 0 && index < parent->size) {
+      Node *right_sibling = std::get<Node *>(*parent->children[index + 1]);
       if (right_sibling->size > D) {
-        redistribute_internal_from_right(cursor, right_sibling, parent, cursor_index);
+        redistribute_internal_from_right(cursor, right_sibling, parent, index);
         return;
       }
     }
 
     // If borrow is not possible, merge with a sibling
-    if (cursor_index > 0) {
-      Node *left = std::get<Node *>(parent->children[cursor_index - 1].value());
-      merge_internal_with_left(cursor, left, parent, cursor_index - 1);
+    if (index > 0) {
+      Node *left = std::get<Node *>(parent->children[index - 1].value());
+      merge_internal_with_left(cursor, left, parent, index);
     } else {
-      Node *right = std::get<Node *>(parent->children[cursor_index + 1].value());
-      merge_internal_with_right(cursor, right, parent, cursor_index);
+      Node *right = std::get<Node *>(parent->children[index + 1].value());
+      merge_internal_with_right(cursor, right, parent, index);
     }
   }
 };
