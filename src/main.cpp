@@ -285,10 +285,10 @@ void test_range_search() {
 int main() {
   // test_insert_and_search();
   // test_remove();
-  // test_debug_1();
-  // test_debug_2();
-  // test_debug_3();
-  // test_debug_4();
+  test_debug_1();
+  test_debug_2();
+  test_debug_3();
+  test_debug_4();
   test_debug_5();
   // test_random_dataset();
   // test_large_dataset();

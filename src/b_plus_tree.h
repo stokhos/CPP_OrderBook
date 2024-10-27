@@ -787,16 +787,16 @@ private:
     // Move all keys and children from cursor to left;
     for (size_t i = 0; i < cursor->size; ++i) {
       left->keys[left->size + i].swap(cursor->keys[i]);
-      if (cursor->children[i].has_value()) {
-        if (auto tmp = cursor->children[i].value(); std::holds_alternative<Order *>(tmp)) {
-          // std::get<Order *>(tmp)->parent = left;
-        } else {
-          std::cout << std::format("Invalid type in {}", __func__) << std::endl;
-        }
-      } else {
-        std::cout << std::format("No value in {}", __func__) << std::endl;
-      }
       left->children[left->size + i].swap(cursor->children[i]);
+      // if (cursor->children[i].has_value()) {
+      //   if (auto tmp = cursor->children[i].value(); std::holds_alternative<Order *>(tmp)) {
+      //     // std::get<Order *>(tmp)->parent = left;
+      //   } else {
+      //     std::cout << std::format("Invalid type in {}", __func__) << std::endl;
+      //   }
+      // } else {
+      //   std::cout << std::format("No value in {}", __func__) << std::endl;
+      // }
     }
     left->size += cursor->size;
     cursor->size = 0;
@@ -806,9 +806,9 @@ private:
       parent->keys[i].swap(parent->keys[i + 1]);
       parent->children[i + 1].swap(parent->children[i + 2]);
     }
-    parent->keys[parent->size - 1].reset();
-    parent->children[parent->size].reset();
     parent->size--;
+    parent->keys[parent->size].reset();
+    parent->children[parent->size + 1].reset();
 
     // Delete the empty cursor node
     delete cursor;
@@ -823,16 +823,16 @@ private:
     // Move all keys and children from right sibling to cursor
     for (size_t i = 0; i < right->size; ++i) {
       cursor->keys[cursor->size + i].swap(right->keys[i]);
-      if (right->children[i].has_value()) {
-        if (auto tmp = right->children[i].value(); std::holds_alternative<Order *>(tmp)) {
-          // std::get<Order *>(tmp)->parent = cursor;
-        } else {
-          std::cout << std::format("Invalid type in {}", __func__) << std::endl;
-        }
-      } else {
-        std::cout << std::format("No value in {}", __func__) << std::endl;
-      }
       cursor->children[cursor->size + i].swap(right->children[i]);
+      // if (right->children[i].has_value()) {
+      //   if (auto tmp = right->children[i].value(); std::holds_alternative<Order *>(tmp)) {
+      //     // std::get<Order *>(tmp)->parent = cursor;
+      //   } else {
+      //     std::cout << std::format("Invalid type in {}", __func__) << std::endl;
+      //   }
+      // } else {
+      //   std::cout << std::format("No value in {}", __func__) << std::endl;
+      // }
     }
     cursor->size += right->size;
     right->size = 0;
@@ -842,9 +842,9 @@ private:
       parent->keys[i].swap(parent->keys[i + 1]);
       parent->children[i + 1].swap(parent->children[i + 2]);
     }
-    parent->keys[parent->size - 1].reset();
-    parent->children[parent->size].reset();
     parent->size--;
+    parent->keys[parent->size].reset();
+    parent->children[parent->size + 1].reset();
 
     // Delete the empty right sibling node
     delete right;
@@ -937,7 +937,6 @@ private:
   }
 
   void merge_internal_with_left(Node *cursor, Node *left, Node *parent, size_t index) {
-
     // Move all keys and children from cursor to left
     left->keys[left->size] = parent->keys[index - 1];
     left->size++;
@@ -972,7 +971,7 @@ private:
   }
 
   void merge_internal_with_right(Node *cursor, Node *right, Node *parent, size_t index) {
-    //  Move all keys and children from right to cursor
+    // Move all keys and children from right to cursor
     cursor->keys[cursor->size] = parent->keys[index];
     cursor->size++;
 
