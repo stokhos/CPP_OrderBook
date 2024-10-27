@@ -128,6 +128,7 @@ void test_debug_3() {
 }
 
 void test_debug_4() {
+  // {9,12,14,11,3,4,1,7,18,6,8,15,16,10,17,2,5,20,13,19}
   std::vector<size_t> keys{5, 8, 11, 1, 14, 18, 13, 15, 10, 12, 4, 6, 17, 9, 19, 7, 3, 20, 16, 2};
   BPlusTree tree;
   for (size_t key : keys) {
@@ -142,6 +143,24 @@ void test_debug_4() {
     print_bplus_tree(tree, true);
   }
   std::cout << "Debug 4 passed\n" << std::endl;
+}
+
+void test_debug_5() {
+  // {9,12,14,11,3,4,1,7,18,6,8,15,16,10,17,2,5,20,13,19}
+  std::vector<size_t> keys{8, 12, 2, 13, 6, 1, 4, 20, 9, 14, 17, 19, 7, 5, 16, 10, 11, 15, 3, 18};
+  BPlusTree tree;
+  for (size_t key : keys) {
+    tree.insert(new Order{key, key * 10, key});
+  }
+  print_bplus_tree(tree, true);
+
+  for (size_t key : keys) {
+    std::cout << "Removing key: " << key << std::endl;
+    tree.remove(key);
+    std::cout << std::format("Key {} removed ", key) << std::endl;
+    print_bplus_tree(tree, true);
+  }
+  std::cout << "Debug 5 passed\n" << std::endl;
 }
 
 void test_random_dataset() {
@@ -270,7 +289,8 @@ int main() {
   // test_debug_2();
   // test_debug_3();
   // test_debug_4();
-  test_random_dataset();
+  test_debug_5();
+  // test_random_dataset();
   // test_large_dataset();
   // test_range_search();
 
