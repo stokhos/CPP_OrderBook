@@ -218,7 +218,7 @@ void print_subtree_recursive(const std::optional<std::variant<Node *, Order *>> 
       for (size_t i = 0; i <= tmp_node->size; ++i) {
         if (tmp_node->children[i].has_value()) {
           auto child = tmp_node->children[i];
-          print_subtree_recursive(child, level + 1, ignore_order, i, os);
+          print_subtree_recursive(child, level + 4, ignore_order, i, os);
         }
       }
     }
@@ -688,7 +688,7 @@ private:
       ++i;
     }
     if (i == cursor->size) {
-      std::cout << "Key not found in the tree" << std::endl;
+      std::cout << std::format("Key:{} not found in the tree", key) << std::endl;
       return;
     }
 
@@ -913,11 +913,17 @@ private:
   }
 
   void redistribute_internal_from_right(Node *cursor, Node *right, Node *parent, size_t index) {
+    print_subtree_recursive(cursor, 2, true, 0);
+    print_subtree_recursive(right, 4, true, 0);
+
     cursor->keys[cursor->size] = (std::get<Node *>(right->children[0].value())->keys[0]);
     std::get<Node *>(right->children[0].value())->parent = cursor;
     cursor->children[cursor->size + 1].swap(right->children[0]);
+
+    print_subtree_recursive(cursor, 2, true, 0);
     // Update the parent key
-    parent->keys[index] = right->keys[0];
+    parent->keys[index] = right->keys[1];
+    print_subtree_recursive(cursor, 4, true, 0);
 
     if (cursor->children[0].has_value()) {
       if (auto tmp = cursor->children[cursor->size].value(); std::holds_alternative<Node *>(tmp)) {
@@ -938,7 +944,7 @@ private:
 
   void merge_internal_with_left(Node *cursor, Node *left, Node *parent, size_t index) {
     // Move all keys and children from cursor to left
-    left->keys[left->size] = parent->keys[index - 1];
+    left->keys[left->size] = std::get<Node *>(cursor->children[0].value())->keys[0];
     left->size++;
 
     // Move all keys and children from cursor to left sibling;
@@ -953,13 +959,14 @@ private:
     left->size += cursor->size;
 
     // Remove the key from parent and adjust children
-    for (size_t i = index; i < parent->size - 1; ++i) {
+    for (size_t i = index - 1; i < parent->size; ++i) {
       parent->keys[i] = parent->keys[i + 1];
       parent->children[i + 1] = parent->children[i + 2];
     }
+
     parent->size--;
-    parent->keys[parent->size].reset();
-    parent->children[parent->size + 1].reset();
+    parent->keys[parent->size + 1].reset();
+    parent->children[parent->size + 2].reset();
 
     // Delete the empty cursor node
     delete cursor;

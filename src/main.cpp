@@ -163,6 +163,64 @@ void test_debug_5() {
   std::cout << "Debug 5 passed\n" << std::endl;
 }
 
+void test_debug_6() {
+  std::vector<size_t> keys{9, 12, 14, 11, 3, 4, 1, 7, 18, 6, 8, 15, 16, 10, 17, 2, 5, 20, 13, 19};
+  //{14,15,3,74,68,96,57,48,95,26,87,1,90,20,58,70,75,59,47,69,37,28,79,85,63,86,99,61,6,51,67,83,94,50,43,62,29,36,35,53,17,10,7,9,39,72,46,78,76,30,93,97,22,100,88,54,31,16,21,91,12,52,8,19,34,49,65,82,33,56,11,23,92,5,24,80,32,13,41,89,71,40,84,42,98,27,73,45,2,44,38,4,25,77,64,18,66,55,60,81,}
+  BPlusTree tree;
+  for (size_t key : keys) {
+    tree.insert(new Order{key, key * 10, key});
+  }
+  print_bplus_tree(tree, true);
+
+  for (size_t key : keys) {
+    std::cout << "Removing key: " << key << std::endl;
+    tree.remove(key);
+    std::cout << std::format("Key {} removed ", key) << std::endl;
+    print_bplus_tree(tree, true);
+  }
+  std::cout << "Debug 6 passed\n" << std::endl;
+}
+
+void test_debug_7() {
+  std::vector<size_t> keys{
+      14, 15, 3,  74,  68, 96, 57, 48, 95, 26, 87, 1,  90, 20, 58, 70, 75, 59, 47, 69, 37, 28, 79, 85, 63,
+      86, 99, 61, 6,   51, 67, 83, 94, 50, 43, 62, 29, 36, 35, 53, 17, 10, 7,  9,  39, 72, 46, 78, 76, 30,
+      93, 97, 22, 100, 88, 54, 31, 16, 21, 91, 12, 52, 8,  19, 34, 49, 65, 82, 33, 56, 11, 23, 92, 5,  24,
+      80, 32, 13, 41,  89, 71, 40, 84, 42, 98, 27, 73, 45, 2,  44, 38, 4,  25, 77, 64, 18, 66, 55, 60, 81,
+  };
+  BPlusTree tree;
+  for (size_t key : keys) {
+    tree.insert(new Order{key, key * 10, key});
+  }
+  print_bplus_tree(tree, true);
+
+  for (size_t key : keys) {
+    std::cout << "Removing key: " << key << std::endl;
+    tree.remove(key);
+    std::cout << std::format("Key {} removed ", key) << std::endl;
+    print_bplus_tree(tree, true);
+  }
+  std::cout << "Debug 7 passed\n" << std::endl;
+}
+
+void test_debug_8() {
+  std::vector<size_t> keys{27, 39, 37, 1,  40, 10, 21, 28, 23, 26, 3,  36, 12, 24, 18, 30, 19, 22, 38, 33,
+                           17, 16, 15, 11, 9,  14, 6,  32, 2,  13, 25, 7,  8,  5,  29, 34, 35, 20, 4,  31};
+  BPlusTree tree;
+  for (size_t key : keys) {
+    tree.insert(new Order{key, key * 10, key});
+  }
+  print_bplus_tree(tree, true);
+
+  for (size_t key : keys) {
+    std::cout << "Removing key: " << key << std::endl;
+    tree.remove(key);
+    std::cout << std::format("Key {} removed ", key) << std::endl;
+    print_bplus_tree(tree, true);
+  }
+  std::cout << "Debug 8 passed\n" << std::endl;
+}
+
 void test_random_dataset() {
   BPlusTree tree;
   std::vector<size_t> keys(20);
@@ -171,10 +229,11 @@ void test_random_dataset() {
   std::mt19937 g(rd());
   std::shuffle(keys.begin(), keys.end(), g);
   // Using std::format
+  std::cout << "{";
   for (const size_t &key : keys) {
     std::cout << std::format("{},", key);
   }
-  std::cout << std::endl;
+  std::cout << "}" << std::endl;
 
   std::cout << "Inserting keys..." << std::endl;
   // Insert shuffled keys
@@ -208,13 +267,20 @@ void test_random_dataset() {
 
   std::cout << "Random dataset test passed!\n" << std::endl;
 }
-void test_large_dataset() {
+
+void test_large_dataset(size_t n = 1000) {
   BPlusTree tree;
-  std::vector<size_t> keys(1000);
+  std::vector<size_t> keys(n);
   std::iota(keys.begin(), keys.end(), 1);
   std::random_device rd;
   std::mt19937 g(rd());
   std::shuffle(keys.begin(), keys.end(), g);
+
+  std::cout << "{";
+  for (const size_t &key : keys) {
+    std::cout << std::format("{},", key);
+  }
+  std::cout << "}" << std::endl;
 
   std::cout << "Inserting keys..." << std::endl;
   // Insert shuffled keys
@@ -226,21 +292,21 @@ void test_large_dataset() {
 
   // Verify all keys are present
   for (size_t key : keys) {
-    std::cout << "searching: " << key << std::endl;
+    // std::cout << "searching: " << key << std::endl;
     assert(tree.search(key).has_value());
   }
 
   // Remove half of the keys
   std::cout << "Removing keys..." << std::endl;
-  for (size_t i = 0; i < 500; ++i) {
-    std::cout << "Removing key: " << keys[i] << std::endl;
+  for (size_t i = 0; i < n / 2; ++i) {
+    // std::cout << "Removing key: " << keys[i] << std::endl;
     tree.remove(keys[i]);
   }
 
   std::cout << "Verifying remaining keys: " << std::endl;
   // Verify removed keys are not found and remaining keys are present
-  for (size_t i = 0; i < 1000; ++i) {
-    if (i < 500) {
+  for (size_t i = 0; i < n; ++i) {
+    if (i < n / 2) {
       assert(!tree.search(keys[i]).has_value());
     } else {
       assert(tree.search(keys[i]).has_value());
@@ -285,13 +351,16 @@ void test_range_search() {
 int main() {
   // test_insert_and_search();
   // test_remove();
-  test_debug_1();
-  test_debug_2();
-  test_debug_3();
-  test_debug_4();
-  test_debug_5();
+  // test_debug_1();
+  // test_debug_2();
+  // test_debug_3();
+  // test_debug_4();
+  // test_debug_5();
+  // test_debug_6();
+  // test_debug_7();
+  test_debug_8();
   // test_random_dataset();
-  // test_large_dataset();
+  test_large_dataset(40);
   // test_range_search();
 
   std::cout << "All tests passed successfully!" << std::endl;
